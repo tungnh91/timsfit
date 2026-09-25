@@ -42,7 +42,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme(colorScheme = lightColorScheme(primary = Coral, background = Canvas,
-                surface = Color.White, onSurface = Ink, onBackground = Ink)) {
+                surface = Color.White, onSurface = Ink, onBackground = Ink,
+                surfaceContainerLowest = Color.White,
+                surfaceContainerLow = Color(0xFFFCFBF8),
+                surfaceContainer = Color.White,
+                surfaceContainerHigh = Color(0xFFF3F1EC),
+                surfaceContainerHighest = Color(0xFFEFEDE7),
+                surfaceVariant = Color(0xFFEFEDE7),
+                surfaceBright = Color.White,
+                surfaceDim = Color(0xFFE5E2DB),
+                surfaceTint = Coral,
+                onSurfaceVariant = Muted,
+                outline = Color(0xFF85847C),
+                outlineVariant = Color(0xFFDCD9D1))) {
                 TimsFit(viewModel())
             }
         }
