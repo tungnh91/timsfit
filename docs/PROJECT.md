@@ -50,6 +50,7 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 | `01a0da9d-2677-7fa3-8956-89c57779267c` | PPL engine, models and red–green unit tests | `/Users/timnguyen/.codex/worktrees/b143/TimsFit`, `codex/core-engine` | None | Integrated; 10 original tests passed on main; 4 independent added |
 | `01a0da9d-2678-7f30-b350-af1b97355bd4` | Compose UI, durable storage, storage/UI tests | `/Users/timnguyen/.codex/worktrees/6d9f/TimsFit`, isolated checkout | None | Integrated; unit and independent runtime verification passed |
 | `01a0daa0-983b-7953-8eff-b231922ef03c` | Independent acceptance testing/review | Main; initially read-only | None | Complete; no confirmed blocking defect |
+| `01a0daae-f07a-7633-bf55-f1917a3059f8` | User-requested step-by-step phone installation and testing guidance | Main; guidance/device setup only | Phone connection | Dispatched; user interacts directly in this chat |
 
 ## Verification and unresolved issues
 
