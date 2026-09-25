@@ -110,16 +110,16 @@ class WorkoutEngineTest {
         assertEquals(Split.PUSH, generated.split)
         generated.exercises.forEachIndexed { i, e ->
             e.sets.forEachIndexed { n, set ->
-                if (i == 0 || i == 3) assertTrue(set.weightLb > history.exercises[i].sets[n].weightLb)
-                else assertEquals(history.exercises[i].sets[n].weightLb, set.weightLb, 0.0)
+                if (i == 0 || i == 3) assertEquals(history.exercises[i].sets[n].weightLb + 5.0, set.weightLb, 0.0)
+                else assertEquals(if (i == 2 && n == 2) 50.0 else history.exercises[i].sets[n].weightLb, set.weightLb, 0.0)
                 assertEquals(e.targetReps, set.reps)
                 assertFalse(set.completed)
             }
             assertTrue(e.note.isNotBlank())
         }
-        val edited = WorkoutEngine.updateSet(state, "w", history.exercises[0].id, 0, 99.0, 1, true)
+        val edited = WorkoutEngine.updateSet(state, "w", history.exercises[0].id, 0, 25.0, 1, true)
         val afterEdit = WorkoutEngine.createWorkout(edited, 600, "new").workouts.last()
-        assertEquals(99.0, afterEdit.exercises.first().sets.first().weightLb, 0.0)
+        assertEquals(25.0, afterEdit.exercises.first().sets.first().weightLb, 0.0)
     }
 
     @Test fun latestSameSplitSeedsAndProgressionNeverExceedsWeightLimit() {
@@ -128,6 +128,15 @@ class WorkoutEngineTest {
         val legs = base.copy(id = "legs", split = Split.LEGS, completedAt = 700)
         val next = WorkoutEngine.createWorkout(AppState(listOf(latest, legs, base)), 800, "new").workouts.last()
         next.exercises.flatMap { it.sets }.forEach { assertEquals(1500.0, it.weightLb, 0.0) }
+    }
+
+    @Test fun zeroLoadNeverProgresses() {
+        val base = finished().workouts.single()
+        val zero = base.copy(exercises = base.exercises.map { e -> e.copy(sets = List(3) { SetEntry(0.0, e.targetReps, true) }) })
+        val legs = base.copy(id = "legs", split = Split.LEGS, completedAt = 700)
+        val next = WorkoutEngine.createWorkout(AppState(listOf(zero, legs)), 800, "new").workouts.last()
+        next.exercises.flatMap { it.sets }.forEach { assertEquals(0.0, it.weightLb, 0.0) }
+
     }
 
     @Test fun heatmapUsesCompletionLocalDateAcrossMidnightAndDst() {
