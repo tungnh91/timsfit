@@ -47,13 +47,15 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 | Chat | Assignment | Checkout / branch | Dependency | Status |
 |---|---|---|---|---|
 | `01a0da95-718e-79a1-b33b-2464dd079252` | Product decisions, records, coordination, integration | `/Users/timnguyen/dev/TimsFit`, `main` | None | Active |
-| `01a0da96-e152-7192-8d96-1a21ed890ebc` | Android toolchain and project bootstrap | Main; bootstrap build configuration only | None | Active |
+| `01a0da96-e152-7192-8d96-1a21ed890ebc` | Android toolchain and project bootstrap | Main; commits `ef002c8`, `45d3084`, `81d3905` | None | Integrated; packaging and emulator boot verified; no product tests |
 | `01a0da9d-2677-7fa3-8956-89c57779267c` | PPL engine, models and red–green unit tests | `/Users/timnguyen/.codex/worktrees/b143/TimsFit`, `codex/core-engine` | Bootstrap for Gradle tests | Active |
 | `01a0da9d-2678-7f30-b350-af1b97355bd4` | Compose UI, durable storage, storage/UI tests | `/Users/timnguyen/.codex/worktrees/6d9f/TimsFit`, isolated checkout | Bootstrap and core API | Active |
+| `01a0daa0-983b-7953-8eff-b231922ef03c` | Independent acceptance testing/review | Main; initially read-only | Integrated app | Test planning active |
 
 ## Verification and unresolved issues
 
 - Inspected directory and relevant chats: complete.
 - Existing app tests: none; no app exists.
-- Android toolchain/build/device readiness: pending audit.
+- Native toolchain installed user-locally under `~/.local/share/timsfit`. `scripts/gradle.sh` selects JDK/SDK. Bootstrap packaging passes (NO-SOURCE is not a behavioral test pass).
+- API 36 ARM64 foldable emulator booted as `emulator-5554`; no physical Galaxy connected. Bootstrap specialist verified boot complete and folded/open states available. Product interaction pending integration.
 - User workflow decision resolved. PPL PoC is agreed; implementation and verification underway.
