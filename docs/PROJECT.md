@@ -4,11 +4,11 @@ Updated: 2026-09-25. Owner: Chief of Staff chat `01a0da95-718e-79a1-b33b-2464dd0
 
 ## Current state
 
-Discovery found an empty project directory, no existing code, instructions, tests, or Git history. Initialized Git on `main`; this is the integration branch. No app is implemented, tested, integrated, or released.
+Discovery found an empty project directory, no existing code, instructions, tests, or Git history. Initialized Git on `main`; this is the integration branch. The first native PPL app is now implemented and integrated on main. Domain and storage unit tests pass; independent emulator/lint verification is underway. No release has been published.
 
 ## Product brief
 
-TimsFit is a new fitness app. User context from “Android App Development Loop” (`6ab6eda6-2558-83ea-9193-ee67dc9da086`): own Android fitness tracker for Galaxy Z Fold 8; prefers native and fast. Kotlin/Compose was recommended in that chat, not explicitly selected by the user. Chief of Staff's proposed engineering choice is Kotlin/Compose with local persistence, pending workflow confirmation.
+TimsFit is a new fitness app. User context from “Android App Development Loop” (`6ab6eda6-2558-83ea-9193-ee67dc9da086`): own Android fitness tracker for Galaxy Z Fold 8; prefers native and fast. Kotlin/Compose was recommended in that chat, not explicitly selected by the user. The user subsequently explicitly selected Kotlin + Jetpack Compose with local persistence.
 
 “PPL Workout Plan” (`6aac8d79-952c-83e9-834b-55bbe0c465cc`) records a request for a three-day PPL plan. “Fitbod alternatives apps” (`6aac8d72-1ee8-83ea-9b12-fb431a379db0`) records interest in alternatives. Neither establishes a TimsFit requirement for workout generation or coaching. “Write chief of staff prompt” (`01a0da93-b9c2-7661-8506-8bc5b21e1038`) supplies coordination process, no product specification.
 
@@ -16,7 +16,7 @@ TimsFit is a new fitness app. User context from “Android App Development Loop�
 
 Personal offline strength-training app: create the next PPL day from completion history, get a 30–40 minute plan, log/edit sets, finish, reopen history, and track completed days on a habit heatmap. No account, cloud sync, AI coaching, health integrations, subscriptions, or public release in this milestone.
 
-Proposed observable acceptance criteria:
+Agreed observable acceptance criteria:
 1. Create the next PPL workout from completed history; plans use standard gym equipment and estimate 30–40 minutes. Start and log multiple exercises/sets offline.
 2. Edit a set; reject invalid weights/reps with understandable feedback. Units remain explicit and consistent.
 3. Restart the process during a session; saved entries and the active workout survive.
@@ -48,9 +48,9 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 |---|---|---|---|---|
 | `01a0da95-718e-79a1-b33b-2464dd079252` | Product decisions, records, coordination, integration | `/Users/timnguyen/dev/TimsFit`, `main` | None | Active |
 | `01a0da96-e152-7192-8d96-1a21ed890ebc` | Android toolchain and project bootstrap | Main; commits `ef002c8`, `45d3084`, `81d3905` | None | Integrated; packaging and emulator boot verified; no product tests |
-| `01a0da9d-2677-7fa3-8956-89c57779267c` | PPL engine, models and red–green unit tests | `/Users/timnguyen/.codex/worktrees/b143/TimsFit`, `codex/core-engine` | Bootstrap for Gradle tests | Active |
-| `01a0da9d-2678-7f30-b350-af1b97355bd4` | Compose UI, durable storage, storage/UI tests | `/Users/timnguyen/.codex/worktrees/6d9f/TimsFit`, isolated checkout | Bootstrap and core API | Active |
-| `01a0daa0-983b-7953-8eff-b231922ef03c` | Independent acceptance testing/review | Main; initially read-only | Integrated app | Test planning active |
+| `01a0da9d-2677-7fa3-8956-89c57779267c` | PPL engine, models and red–green unit tests | `/Users/timnguyen/.codex/worktrees/b143/TimsFit`, `codex/core-engine` | None | Integrated; 10 original tests passed on main; 4 independent added |
+| `01a0da9d-2678-7f30-b350-af1b97355bd4` | Compose UI, durable storage, storage/UI tests | `/Users/timnguyen/.codex/worktrees/6d9f/TimsFit`, isolated checkout | None | Integrated; storage green; runtime verification underway |
+| `01a0daa0-983b-7953-8eff-b231922ef03c` | Independent acceptance testing/review | Main; initially read-only | None | Independent unit/runtime/lint verification active |
 
 ## Verification and unresolved issues
 
