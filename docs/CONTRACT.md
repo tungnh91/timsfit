@@ -1,0 +1,42 @@
+# PoC implementation contract
+
+Chief of Staff owns this contract. Kotlin package `com.timsfit.core`, JVM module `:core`; Compose app package `com.timsfit.app`, module `:app`, minSdk 26.
+
+## Core API (exact public names)
+
+All models are Kotlin data classes unless noted. Use String IDs and immutable Lists. Default constructor values are allowed where useful. Epoch timestamps are Long milliseconds. Weights are stored in pounds for this PoC, visibly labeled `lb` throughout; no unit conversion or settings in scope.
+
+```kotlin
+enum class Split { PUSH, PULL, LEGS }
+data class SetEntry(val weightLb: Double, val reps: Int, val completed: Boolean)
+data class ExercisePlan(val id: String, val name: String, val targetReps: Int, val restSeconds: Int, val sets: List<SetEntry>, val note: String)
+data class Workout(val id: String, val split: Split, val createdAt: Long, val startedAt: Long?, val completedAt: Long?, val exercises: List<ExercisePlan>, val estimatedMinutes: Int)
+data class AppState(val workouts: List<Workout> = emptyList())
+object WorkoutEngine {
+  fun nextSplit(state: AppState): Split
+  fun createWorkout(state: AppState, now: Long, id: String): AppState
+  fun startWorkout(state: AppState, workoutId: String, now: Long): AppState
+  fun updateSet(state: AppState, workoutId: String, exerciseId: String, setIndex: Int, weightLb: Double, reps: Int, completed: Boolean): AppState
+  fun finishWorkout(state: AppState, workoutId: String, now: Long): AppState
+  fun discardWorkout(state: AppState, workoutId: String): AppState
+  fun completedDayCounts(state: AppState, zone: java.time.ZoneId): Map<java.time.LocalDate, Int>
+}
+```
+
+Core functions throw IllegalArgumentException with helpful messages for invalid operations; UI catches and displays them. Missing IDs/indexes are errors, not silent success. All functions return updated immutable state. Timestamp injection makes tests deterministic. No Android or network dependencies in core.
+
+## Behavioral decisions
+
+- One unfinished workout at a time. Create returns the existing state if a draft/active workout exists (UI opens it). Next split follows most recent completed session: Push → Pull → Legs → Push, initially Push. Discard does not advance rotation.
+- Generate 4 exercises × 3 sets for each split using free weights and common machines, bounded 30–40 minute estimate that includes warmup/rest. No remote AI.
+- Same split's most recent completed workout seeds per-exercise weight/reps. If all three completed sets meet target reps, add the exercise's conservative predefined weight increment; otherwise retain prior weight. Explain changes with `note`. First workout starts at 0 lb (user enters a working weight); never present invented personal weights. Zero is valid for unloaded/bodyweight; reps 1–100 and finite weight 0–1500 are valid. Generated sets default uncompleted and reps at target.
+- Start records startedAt once. Set editing is allowed in started and completed sessions; edited history influences future generation. Finish requires started session and at least one completed set; finish is idempotent (keeps original completion time). Partial sessions are permitted and displayed honestly. No duplicate completions/heatmap counts.
+- History uses completion timestamp in current local timezone; habit heatmap shows completed sessions only. Discard only unfinished workouts. Dates come from actual device clock with injected tests.
+
+## App ownership and persistence
+
+UI specialist owns `app/src/main/java/com/timsfit/app/**` including MainActivity, state holder, JSON file persistence and testable storage seam. Use atomic writes, versioned JSON, local private storage, IO off main thread, save before declaring success, and visible recoverable error without overwriting corrupt data. Keep per-keystroke input drafts in UI and persist on explicit set action. Persist draft creation, start, edits, completion and discard. Reload process state; display local empty/error states. No permission/network/backend dependency. Core specialist owns `core/src/**` only. Bootstrap specialist owns build configuration, manifest/resources/wrapper only. Independent reviewer owns test additions after integration (coordinate overlapping paths).
+
+## Interface
+
+Light warm-white canvas, near-black type, generous spacing, restrained coral primary action, rounded cards. Inspired by simplicity and hierarchy of Airbnb/Apple, not a clone. Reference screenshot informs day/session selection, exercise list and prominent Start action; avoid its dark theme and long duration. Home = next session + recent history + habit heatmap. Workout details = estimated duration, split, exercise sets, start/log/finish. Explicit labels and large targets, scrolling, narrow/wide/foldable layout. Fast local operations, no network on startup or workout interaction. No charts library needed for simple heatmap.
