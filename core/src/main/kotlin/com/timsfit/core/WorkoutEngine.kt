@@ -57,11 +57,17 @@ object WorkoutEngine {
                 SetEntry(suggested, spec.reps, false)
             }
             val note = when {
-                completed.isEmpty() -> "Start at 0 lb. Enter a comfortable working load; 0 lb is valid for unloaded sets."
-                increase && completed.any { it.weightLb > 0.0 && it.weightLb < 1500.0 } -> "All 3 sets met the target. Add up to ${spec.increment} lb to each positive load (maximum 1500 lb); zero stays zero."
-                else -> "Repeat completed set loads. Reach the target on all 3 sets before increasing; zero stays zero."
-            } + " For unfinished sets, use the lightest completed load. Dumbbell loads are per hand."
-            ExercisePlan(spec.id, spec.name, spec.reps, spec.rest, sets, note)
+                completed.isEmpty() -> "Choose your starting weight."
+                increase && completed.any { it.weightLb > 0.0 && it.weightLb < 1500.0 } -> {
+                    val increment = if (spec.increment % 1.0 == 0.0) spec.increment.toInt().toString() else spec.increment.toString()
+                    "Targets met last time. Suggested +$increment lb."
+                }
+                else -> "Repeat your previous working weights."
+            } + if (completed.isNotEmpty() && prior?.sets?.any { !it.completed } == true) {
+                " Unfinished sets use your lightest completed load."
+            } else ""
+            val loadNote = if (spec.name.contains("dumbbell", ignoreCase = true)) " Weight is per hand." else ""
+            ExercisePlan(spec.id, spec.name, spec.reps, spec.rest, sets, note + loadNote)
         }
         // Five-minute warmup, one minute setup/transition per exercise, 45 seconds
         // execution per set, and prescribed rest between sets (not after the last).

@@ -41,7 +41,7 @@ class WorkoutEngineTest {
             val seconds = 5 * 60 + 4 * 60 + workout.exercises.sumOf { it.sets.size * 45 + (it.sets.size - 1) * it.restSeconds }
             assertEquals((seconds + 59) / 60, workout.estimatedMinutes)
             workout.exercises.forEach { e ->
-                assertTrue(e.note.contains("0"))
+                assertTrue(e.note.startsWith("Choose your starting weight."))
                 assertEquals(3, e.sets.size)
                 e.sets.forEach { assertEquals(0.0, it.weightLb, 0.0); assertEquals(e.targetReps, it.reps); assertFalse(it.completed) }
             }
