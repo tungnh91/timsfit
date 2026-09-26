@@ -1,5 +1,16 @@
 # PoC implementation contract
 
+## Revision 0.2 — less copy, explicit workout choice
+
+User requested removal of motivational/redundant text and ability to override the recommended workout. Keep Kotlin/Compose, persistence, logging and heatmap behavior.
+
+- Home begins with the workout card: compact `Suggested: Push` label, accessible Push / Pull / Legs selector and `Create workout` action. Default selection is the recommendation, but user can select any split. Selection survives recreation. No slogans, motivational heading, explanatory hero or standard-gym boilerplate.
+- Draft detail permits the same split selection before Start; switching regenerates that draft from the selected split's own history, retaining workout ID/createdAt. Re-selecting the same split is a no-op. Active or completed workouts cannot be silently replaced or switched. Active home shows Resume; user can finish/discard using existing guarded flows.
+- Override does not change rotation until completed. Completing a chosen Legs session means next suggested Push. Same-split load progression and all existing protections remain.
+- API: `createWorkout(state: AppState, now: Long, id: String, selectedSplit: Split? = null): AppState`; existing calls remain valid. Add `changeWorkoutSplit(state: AppState, workoutId: String, split: Split): AppState` for unstarted drafts only; invalid IDs or started/completed sessions throw IllegalArgumentException. No JSON schema/model changes.
+- Remove motivational and redundant screen text, repeated default exercise notes, repeated preview set rows, verbose save/finish guidance. Keep functional labels, weight units (per-hand where relevant), actionable errors, unsaved/discard confirmations, reps/rest information, completion counts and heatmap accessibility. Brief progression information may remain only when useful.
+- Acceptance: red–green core and UI tests for explicit selection (all three splits), draft switch, same-split history, rotation after override, active protection and restart persistence. Existing regression suite remains green with intentional text assertions updated. Independent reviewer verifies absence of slogans and full selected-workout flow on narrow and wide emulator, preserving saved data. New versionCode2/versionName0.2.0 debug APK must support install -r without data deletion.
+
 Chief of Staff owns this contract. Kotlin package `com.timsfit.core`, JVM module `:core`; Compose app package `com.timsfit.app`, module `:app`, minSdk 26.
 
 ## Core API (exact public names)
