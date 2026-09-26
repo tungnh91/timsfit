@@ -80,4 +80,33 @@ class IndependentAcceptanceTest {
         assertEquals(mapOf(LocalDate.of(2026, 11, 1) to 3), WorkoutEngine.completedDayCounts(state, ZoneId.of("America/Los_Angeles")))
         assertEquals(mapOf(LocalDate.of(2026, 10, 31) to 3), WorkoutEngine.completedDayCounts(state, ZoneId.of("Pacific/Honolulu")))
     }
+
+    @Test fun switchingDraftUsesEditedChosenHistoryWithoutCompoundingProgression() {
+        var state = WorkoutEngine.createWorkout(AppState(), 100, "legs-history", Split.LEGS)
+        state = WorkoutEngine.startWorkout(state, "legs-history", 101)
+        listOf(0.0, 40.0, 55.0).forEachIndexed { index, load ->
+            state = log(state, "legs-history", index, load)
+        }
+        state = WorkoutEngine.finishWorkout(state, "legs-history", 110)
+        state = WorkoutEngine.createWorkout(state, 200, "draft", Split.PUSH)
+        val originalHistory = state.workouts.first()
+        state = WorkoutEngine.changeWorkoutSplit(state, "draft", Split.LEGS)
+        assertEquals(listOf(0.0, 45.0, 60.0), state.workouts.last().exercises.first().sets.map { it.weightLb })
+        repeat(3) {
+            state = WorkoutEngine.changeWorkoutSplit(state, "draft", Split.PULL)
+            state = WorkoutEngine.changeWorkoutSplit(state, "draft", Split.LEGS)
+        }
+        assertEquals(listOf(0.0, 45.0, 60.0), state.workouts.last().exercises.first().sets.map { it.weightLb })
+        assertEquals(originalHistory, state.workouts.first())
+        state = log(state, "legs-history", 1, 30.0, reps = 7)
+        state = WorkoutEngine.changeWorkoutSplit(state, "draft", Split.PUSH)
+        state = WorkoutEngine.changeWorkoutSplit(state, "draft", Split.LEGS)
+        val draft = state.workouts.last()
+        assertEquals(listOf(0.0, 30.0, 55.0), draft.exercises.first().sets.map { it.weightLb })
+        assertEquals("draft", draft.id)
+        assertEquals(200L, draft.createdAt)
+        assertNull(draft.startedAt)
+        assertTrue(draft.exercises.flatMap { it.sets }.none { it.completed })
+        assertEquals(Split.PUSH, WorkoutEngine.nextSplit(state))
+    }
 }
