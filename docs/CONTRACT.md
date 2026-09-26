@@ -25,7 +25,8 @@ data class Workout(val id: String, val split: Split, val createdAt: Long, val st
 data class AppState(val workouts: List<Workout> = emptyList())
 object WorkoutEngine {
   fun nextSplit(state: AppState): Split
-  fun createWorkout(state: AppState, now: Long, id: String): AppState
+  fun createWorkout(state: AppState, now: Long, id: String, selectedSplit: Split? = null): AppState
+  fun changeWorkoutSplit(state: AppState, workoutId: String, split: Split): AppState
   fun startWorkout(state: AppState, workoutId: String, now: Long): AppState
   fun updateSet(state: AppState, workoutId: String, exerciseId: String, setIndex: Int, weightLb: Double, reps: Int, completed: Boolean): AppState
   fun finishWorkout(state: AppState, workoutId: String, now: Long): AppState
@@ -51,4 +52,4 @@ UI specialist owns `app/src/main/java/com/timsfit/app/**` including MainActivity
 
 ## Interface
 
-Light warm-white canvas, near-black type, generous spacing, restrained coral primary action, rounded cards. Inspired by simplicity and hierarchy of Airbnb/Apple, not a clone. Reference screenshot informs day/session selection, exercise list and prominent Start action; avoid its dark theme and long duration. Home = next session + recent history + habit heatmap. Workout details = estimated duration, split, exercise sets, start/log/finish. Explicit labels and large targets, scrolling, narrow/wide/foldable layout. Fast local operations, no network on startup or workout interaction. No charts library needed for simple heatmap.
+Light warm-white canvas, near-black type, generous spacing, restrained coral primary action, rounded cards. Inspired by simplicity and hierarchy of Airbnb/Apple, not a clone. Reference screenshot informs day/session selection, exercise list and prominent Start action; avoid its dark theme and long duration. Home = suggested session and explicit PPL selection + recent history + habit heatmap. No motivational text or explanatory hero. Workout details = estimated duration, split, exercise sets, start/log/finish. Explicit labels and large targets, scrolling, narrow/wide/foldable layout. Fast local operations, no network on startup or workout interaction. No charts library needed for simple heatmap.

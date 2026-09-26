@@ -1,6 +1,6 @@
 # TimsFit
 
-A small, offline Android app for Push / Pull / Legs training. Built with Kotlin and Jetpack Compose.
+A small, offline Android app for Push / Pull / Legs training. Built with Kotlin and Jetpack Compose. Version 0.2 adds explicit workout choice and simpler screens.
 
 ## Try the PoC
 
@@ -31,8 +31,8 @@ To use the prepared local foldable emulator:
 
 ## Workout loop
 
-1. Tap **Create next day**. Completed sessions determine the next Push → Pull → Legs day. An unfinished day resumes instead of creating a duplicate.
-2. Review the four-exercise plan and tap **Start workout**. Estimated duration is 31–32 minutes including warmup, set execution, rests, and transitions; actual duration depends on your pace.
+1. Choose **Push**, **Pull**, or **Legs**, then tap **Create workout**. The suggested choice follows completed sessions, but you can override it. An unfinished day opens or resumes instead of creating a duplicate.
+2. Review the four-exercise plan, optionally change its split before starting, and tap **Start workout**. Estimated duration is 31–32 minutes including warmup, set execution, rests, and transitions; actual duration depends on your pace.
 3. Enter your working weight in **lb** and reps, mark completion, and tap **Save set**. Dumbbell weights are per hand. First-time loads start at zero so you can choose them.
 4. Finish after at least one completed set. Partial sessions are labeled with the actual completed set count. Reopen history to edit saved sets.
 5. The next same-split session uses previous completed loads. Meeting all three set targets suggests a small increase in positive loads; incomplete sets and zero loads do not earn an increase. You can edit every suggestion.
@@ -45,10 +45,10 @@ The first setup installed the toolchain under `~/.local/share/timsfit`, without 
 
 ```sh
 ./scripts/gradle.sh :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
-./scripts/gradle.sh :app:connectedDebugAndroidTest
+ANDROID_SERIAL=emulator-5554 ./scripts/gradle.sh :app:connectedDebugAndroidTest
 ```
 
-Instrumentation checks run on a dedicated test emulator. Consult the current test setup before running them against a device containing workouts you want to keep.
+Instrumentation checks run on a dedicated test emulator, explicitly selected above so a connected phone is excluded. Consult the current test setup before running them against a device containing workouts you want to keep.
 
 `core` contains deterministic generation and state transitions. `app` contains Compose UI, state management, and versioned atomic local persistence. There is no backend or runtime network requirement.
 
