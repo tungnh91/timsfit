@@ -43,7 +43,11 @@ object WorkoutEngine {
         require(id.isNotBlank()) { "Workout ID must not be blank." }
         if (state.workouts.any { it.completedAt == null }) return state
         require(state.workouts.none { it.id == id }) { "Workout ID already exists: $id." }
-        val split = nextSplit(state)
+        val workout = generateWorkout(state, now, id, selectedSplit ?: nextSplit(state))
+        return state.copy(workouts = state.workouts + workout)
+    }
+
+    private fun generateWorkout(state: AppState, now: Long, id: String, split: Split): Workout {
         val history = latest(state, split)
         val exercises = plans.getValue(split).map { spec ->
             val prior = history?.exercises?.find { it.id == spec.id }
@@ -72,11 +76,17 @@ object WorkoutEngine {
         // Five-minute warmup, one minute setup/transition per exercise, 45 seconds
         // execution per set, and prescribed rest between sets (not after the last).
         val seconds = 5 * 60 + exercises.sumOf { 60 + it.sets.size * 45 + (it.sets.size - 1) * it.restSeconds }
-        val workout = Workout(id, split, now, null, null, exercises, (seconds + 59) / 60)
-        return state.copy(workouts = state.workouts + workout)
+        return Workout(id, split, now, null, null, exercises, (seconds + 59) / 60)
     }
 
-    fun changeWorkoutSplit(state: AppState, workoutId: String, split: Split): AppState = TODO()
+    fun changeWorkoutSplit(state: AppState, workoutId: String, split: Split): AppState {
+        val workout = findWorkout(state, workoutId)
+        require(workout.startedAt == null && workout.completedAt == null) {
+            "Only an unstarted workout can change its split."
+        }
+        if (workout.split == split) return state
+        return replace(state, generateWorkout(state, workout.createdAt, workout.id, split))
+    }
 
     private fun findWorkout(state: AppState, id: String): Workout =
         state.workouts.find { it.id == id } ?: throw IllegalArgumentException("Workout not found: $id.")
