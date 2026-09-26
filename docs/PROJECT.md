@@ -4,7 +4,7 @@ Updated: 2026-09-25. Owner: Chief of Staff chat `01a0da95-718e-79a1-b33b-2464dd0
 
 ## Current revision — 0.2
 
-User feedback: simplify text; remove motivational copy; allow Push/Pull/Legs selection overriding recommendation. Scope/API/acceptance are in `docs/CONTRACT.md` revision0.2. Core and UI specialists are reusing their isolated worktrees; independent QA will verify after integration. UI currently owns emulator for red–green tests. Main owns version bump and records. Existing local workouts must survive an in-place APK upgrade.
+User feedback: simplify text; remove motivational copy; allow Push/Pull/Legs selection overriding recommendation. Scope/API/acceptance are in `docs/CONTRACT.md` revision0.2. Implemented and integrated: concise copy, manual split choice, safe draft switching, and supplied biceps icon. 29 tests and independent emulator QA pass; original0.1→0.2 upgrade retained saved JSON byte-for-byte. Main owns records. Installation chat is installing final0.2 on authorized phone; physical acceptance pending.
 
 ## Current state
 
@@ -35,7 +35,7 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 1. Completed: native PPL generation, logging, persistence, history and heatmap integrated.
 2. Completed: red–green TDD, independent unit/UI tests, direct emulator durability/error/layout acceptance, final APK packaging.
 3. Next: user tries APK on physical Galaxy Fold; collect actual device feedback.
-4. In progress from feedback: concise screens and manual workout selection (revision0.2).
+4. Completed from feedback: concise screens and manual workout selection (revision0.2), plus supplied icon.
 
 ## Decisions and assumptions
 
@@ -44,6 +44,7 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 - Kotlin + Jetpack Compose explicitly selected. Deterministic local generation; no remote AI or backend. PoC uses explicitly labeled pounds.
 - Bootstrap owner may install user-local native Android prerequisites and emulator for build/testing. No global configuration changes.
 - No background monitoring or scheduled continuation has been configured.
+- Device tests now require explicit ANDROID_SERIAL through scripts/gradle.sh. A cancelled unscoped QA run may have affected the connected phone installation; cause unresolved. See docs/QA-REPORT-0.2.md. Do not claim phone data was preserved.
 
 ## Workstream registry
 
@@ -62,4 +63,4 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 - Prior PoC verified with 21 automated tests and direct emulator interaction; revision0.2 verification pending.
 - Native toolchain installed user-locally under `~/.local/share/timsfit`. `scripts/gradle.sh` selects JDK/SDK. Bootstrap packaging passes (NO-SOURCE is not a behavioral test pass).
 - API 36 ARM64 foldable emulator booted as `emulator-5554`; no physical Galaxy connected. Bootstrap specialist verified boot complete and folded/open states available. Product interaction completed; see `docs/VERIFICATION.md` and `docs/QA-REPORT.md`.
-- User workflow decision resolved. PPL PoC is agreed; implemented, independently verified, integrated and packaged. APK `artifacts/TimsFit-0.1.0-debug.apk`; local PoC, not store released.
+- User workflow decision resolved. PPL PoC is agreed; implemented, independently verified, integrated and packaged. Latest APK `artifacts/TimsFit-0.2.0-debug.apk`; local PoC, not store released.

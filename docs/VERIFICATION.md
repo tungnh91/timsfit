@@ -1,5 +1,19 @@
 # PoC verification ledger
 
+## Revision 0.2 — simplified screens and chosen workouts
+
+Behavior revision `0e509e4`; independent test additions `9426c1b`; final supplied-icon resource revision `1ff18d3`. VersionCode 2 / versionName 0.2.0.
+
+- Actual core red: 19 tests ran, four failed against missing override/draft behavior; green: 19 passed. Independent repeated-switch/history-edit test brings final core total to 20.
+- Actual Compose red: choosing Legs failed because selector was absent. Green: three implementation instrumentation tests; independent full override/history/rotation flow brings final emulator total to four.
+- Integrated command: `ANDROID_SERIAL=emulator-5554 scripts/gradle.sh :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:connectedDebugAndroidTest --console=plain`. BUILD SUCCESSFUL in 21 s; 20 core + 5 storage + 4 instrumentation = 29 tests, zero failures/errors/skips. Root independently read XML results. Lint: zero errors, nine pre-existing warnings.
+- Upgrade check: original packaged 0.1 app created a completed Push with 72.5 lb bench set and a Pull draft through UI. Installing 0.2 with `adb -s emulator-5554 install -r` retained JSON byte-for-byte and reopened existing history/draft. Draft changed to Legs successfully. No schema change.
+- Root inspected simplified expanded screenshots: no slogan, motivational hero, or repetitive default guidance; accessible three-way split choice and functional information retained. Final narrow/expanded screens inspected; chosen draft and 95 lb active Legs set survived force-stop, old history remained unchanged, completed Legs suggested Push.
+- Emulator tests were explicitly restricted to emulator-5554 after a physical phone connected. An earlier unscoped command was cancelled during connectedDebugAndroidTest (17:25:42–17:25:53 local). The initial client log hid task startup; a later daemon audit corrected that assessment. Available logs cannot exclude setup/cleanup impact on the newly connected phone, whose 0.1 package subsequently appeared absent. Cause is unresolved; no phone data-preservation claim is made. Subsequent scoped runs explicitly target the AVD only. `scripts/gradle.sh` now rejects connected tests without an explicit ANDROID_SERIAL (exit2 verified). The phone installation chat separately installed 0.1 on the user's authorized phone; revision 0.2 physical acceptance is not claimed.
+- Packaged `artifacts/TimsFit-0.2.0-debug.apk`: 11,741,373 bytes, SHA256 `bca20b9b0d40194c0bd72340f3cd5b33ff29bd634ce155d87b66217aeb300d05`. APK metadata independently confirms version 2 / 0.2.0. Final icon-only resource build passed assemble/lint plus all four emulator tests in 20 s; launcher icon visually checked. Logs: `artifacts/qa-v02/`; independent report: `docs/QA-REPORT-0.2.md`.
+
+## Original 0.1 verification
+
 Owner: Chief of Staff. Verified native PoC build: `fcc3bfb` (all production code; subsequent documentation-only commits do not change the APK).
 
 ## Required acceptance checks
