@@ -39,7 +39,7 @@ object WorkoutEngine {
         Split.PULL -> Split.LEGS
     }
 
-    fun createWorkout(state: AppState, now: Long, id: String): AppState {
+    fun createWorkout(state: AppState, now: Long, id: String, selectedSplit: Split? = null): AppState {
         require(id.isNotBlank()) { "Workout ID must not be blank." }
         if (state.workouts.any { it.completedAt == null }) return state
         require(state.workouts.none { it.id == id }) { "Workout ID already exists: $id." }
@@ -75,6 +75,8 @@ object WorkoutEngine {
         val workout = Workout(id, split, now, null, null, exercises, (seconds + 59) / 60)
         return state.copy(workouts = state.workouts + workout)
     }
+
+    fun changeWorkoutSplit(state: AppState, workoutId: String, split: Split): AppState = TODO()
 
     private fun findWorkout(state: AppState, id: String): Workout =
         state.workouts.find { it.id == id } ?: throw IllegalArgumentException("Workout not found: $id.")
