@@ -2,6 +2,10 @@
 
 Updated: 2026-09-25. Owner: Chief of Staff chat `01a0da95-718e-79a1-b33b-2464dd079252`.
 
+## Current revision — 0.2
+
+User feedback: simplify text; remove motivational copy; allow Push/Pull/Legs selection overriding recommendation. Scope/API/acceptance are in `docs/CONTRACT.md` revision0.2. Core and UI specialists are reusing their isolated worktrees; independent QA will verify after integration. UI currently owns emulator for red–green tests. Main owns version bump and records. Existing local workouts must survive an in-place APK upgrade.
+
 ## Current state
 
 Discovery found an empty project directory, no existing code, instructions, tests, or Git history. Initialized Git on `main`; this is the integration branch. The first native PPL app is now implemented and integrated on main. All 21 automated tests, lint, build, and independent emulator acceptance checks pass. No release has been published.
@@ -31,7 +35,7 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 1. Completed: native PPL generation, logging, persistence, history and heatmap integrated.
 2. Completed: red–green TDD, independent unit/UI tests, direct emulator durability/error/layout acceptance, final APK packaging.
 3. Next: user tries APK on physical Galaxy Fold; collect actual device feedback.
-4. Future features remain unplanned until that feedback.
+4. In progress from feedback: concise screens and manual workout selection (revision0.2).
 
 ## Decisions and assumptions
 
@@ -55,7 +59,7 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 ## Verification and unresolved issues
 
 - Inspected directory and relevant chats: complete.
-- Existing app tests: none; no app exists.
+- Prior PoC verified with 21 automated tests and direct emulator interaction; revision0.2 verification pending.
 - Native toolchain installed user-locally under `~/.local/share/timsfit`. `scripts/gradle.sh` selects JDK/SDK. Bootstrap packaging passes (NO-SOURCE is not a behavioral test pass).
 - API 36 ARM64 foldable emulator booted as `emulator-5554`; no physical Galaxy connected. Bootstrap specialist verified boot complete and folded/open states available. Product interaction completed; see `docs/VERIFICATION.md` and `docs/QA-REPORT.md`.
 - User workflow decision resolved. PPL PoC is agreed; implemented, independently verified, integrated and packaged. APK `artifacts/TimsFit-0.1.0-debug.apk`; local PoC, not store released.
