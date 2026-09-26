@@ -12,6 +12,8 @@ Behavior revision `0e509e4`; independent test additions `9426c1b`; final supplie
 - Emulator tests were explicitly restricted to emulator-5554 after a physical phone connected. An earlier unscoped command was cancelled during connectedDebugAndroidTest (17:25:42–17:25:53 local). The initial client log hid task startup; a later daemon audit corrected that assessment. Available logs cannot exclude setup/cleanup impact on the newly connected phone, whose 0.1 package subsequently appeared absent. Cause is unresolved; no phone data-preservation claim is made. Subsequent scoped runs explicitly target the AVD only. `scripts/gradle.sh` now rejects connected tests without an explicit ANDROID_SERIAL (exit2 verified). The phone installation chat separately installed 0.1 on the user's authorized phone; revision 0.2 physical acceptance is not claimed.
 - Packaged `artifacts/TimsFit-0.2.0-debug.apk`: 11,741,373 bytes, SHA256 `bca20b9b0d40194c0bd72340f3cd5b33ff29bd634ce155d87b66217aeb300d05`. APK metadata independently confirms version 2 / 0.2.0. Final icon-only resource build passed assemble/lint plus all four emulator tests in 20 s; launcher icon visually checked. Logs: `artifacts/qa-v02/`; independent report: `docs/QA-REPORT-0.2.md`.
 
+Final phone handoff: installation chat verified final APK hash, `install -r` succeeded, package version2/0.2.0 confirmed, MainActivity launched successfully (single observed cold launch468 ms). No clear/uninstall/test-seeding by installation chat. Prior phone package was absent; no phone-history preservation or physical workout acceptance claim.
+
 ## Original 0.1 verification
 
 Owner: Chief of Staff. Verified native PoC build: `fcc3bfb` (all production code; subsequent documentation-only commits do not change the APK).

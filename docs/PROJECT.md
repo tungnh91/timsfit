@@ -4,7 +4,7 @@ Updated: 2026-09-25. Owner: Chief of Staff chat `01a0da95-718e-79a1-b33b-2464dd0
 
 ## Current revision — 0.2
 
-User feedback: simplify text; remove motivational copy; allow Push/Pull/Legs selection overriding recommendation. Scope/API/acceptance are in `docs/CONTRACT.md` revision0.2. Implemented and integrated: concise copy, manual split choice, safe draft switching, and supplied biceps icon. 29 tests and independent emulator QA pass; original0.1→0.2 upgrade retained saved JSON byte-for-byte. Main owns records. Installation chat is installing final0.2 on authorized phone; physical acceptance pending.
+User feedback: simplify text; remove motivational copy; allow Push/Pull/Legs selection overriding recommendation. Scope/API/acceptance are in `docs/CONTRACT.md` revision0.2. Implemented and integrated: concise copy, manual split choice, safe draft switching, and supplied biceps icon. 29 tests and independent emulator QA pass; original0.1→0.2 upgrade retained saved JSON byte-for-byte. Main owns records. Installation chat verified final0.2 installed and launched on authorized Samsung phone (versionCode2/versionName0.2.0). No physical workout acceptance test was run.
 
 ## Current state
 
