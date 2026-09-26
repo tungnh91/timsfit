@@ -22,8 +22,8 @@ class WorkoutFlowTest {
     @get:Rule val rules: RuleChain = RuleChain.outerRule(cleanLog).around(compose)
 
     @Test fun createLogFinishAndReopenHistory() {
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("Create next day").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Create next day").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Create workout").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Create workout").performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Start workout").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Start workout").performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Save set").fetchSemanticsNodes().isNotEmpty() }
@@ -34,11 +34,11 @@ class WorkoutFlowTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Saved ✓").fetchSemanticsNodes().isNotEmpty() }
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Finish workout"))
         compose.onNodeWithText("Finish workout").performClick()
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Create next day").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Create workout").fetchSemanticsNodes().isNotEmpty() }
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("1/12 sets completed"))
         compose.onNodeWithText("1/12 sets completed").assertIsDisplayed()
         compose.onNodeWithText("View / edit").performClick()
-        compose.onNodeWithText("You can edit your saved sets below.").assertIsDisplayed()
+        compose.onNodeWithText("Completed ", substring = true).assertIsDisplayed()
         compose.onAllNodesWithText("25.0")[0].assertExists()
     }
 }

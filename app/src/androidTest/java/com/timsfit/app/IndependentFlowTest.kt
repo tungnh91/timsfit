@@ -24,8 +24,8 @@ class IndependentFlowTest {
     private val weight = "Barbell bench press set 1 weight in lb"
 
     @Test fun invalidEditsAndUnsavedDraftSurviveRecreationBeforeDurableSave() {
-        waitFor("Create next day")
-        compose.onNodeWithText("Create next day").performClick()
+        waitFor("Create workout")
+        compose.onNodeWithText("Create workout").performClick()
         waitFor("Start workout")
         compose.onNodeWithText("Start workout").performClick()
         waitFor("Save set")
@@ -48,7 +48,7 @@ class IndependentFlowTest {
         compose.onNodeWithContentDescription(weight).assertTextContains("42.5")
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Finish workout"))
         compose.onNodeWithText("Finish workout").performClick()
-        waitFor("Create next day")
-        compose.onNodeWithText("Pull day").assertExists()
+        waitFor("Create workout")
+        compose.onNodeWithText("Suggested: Pull").assertExists()
     }
 }

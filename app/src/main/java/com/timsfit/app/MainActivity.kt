@@ -76,7 +76,6 @@ fun TimsFit(model: FitViewModel) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 Text("TimsFit", fontSize = 23.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("SHOW UP. GET STRONGER.", fontSize = 10.sp, color = Muted, letterSpacing = 1.sp)
             }
             if (ui.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             ui.error?.let { message ->
@@ -95,13 +94,14 @@ fun TimsFit(model: FitViewModel) {
                         modifier = Modifier.padding(24.dp), color = Muted)
                 }
             } else if (workout == null) {
-                Home(ui.state, ui.busy, onOpen = { selectedId = it }, onCreate = {
-                    model.change({ WorkoutEngine.createWorkout(it, System.currentTimeMillis(), java.util.UUID.randomUUID().toString()) }) {
+                Home(ui.state, ui.busy, onOpen = { selectedId = it }, onCreate = { split ->
+                    model.change({ WorkoutEngine.createWorkout(it, System.currentTimeMillis(), java.util.UUID.randomUUID().toString(), split) }) {
                         selectedId = it.workouts.firstOrNull { w -> w.completedAt == null }?.id
                     }
                 })
             } else {
                 WorkoutScreen(workout, ui.busy, onBack = goHome,
+                    onSplit = { split -> model.change({ WorkoutEngine.changeWorkoutSplit(it, workout.id, split) }) },
                     onStart = { model.change({ WorkoutEngine.startWorkout(it, workout.id, System.currentTimeMillis()) }) },
                     onFinish = {
                         if (dirtySets.isNotEmpty()) pendingNavigation = "finish"
@@ -138,36 +138,48 @@ fun TimsFit(model: FitViewModel) {
 }
 
 @Composable
-private fun Home(state: AppState, busy: Boolean, onOpen: (String) -> Unit, onCreate: () -> Unit) {
+private fun SplitSelector(selected: Split, enabled: Boolean, onSelect: (Split) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Split.entries.forEach { split ->
+            FilterChip(selected = selected == split, onClick = { onSelect(split) }, enabled = enabled,
+                label = { Text(split.title()) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE7E2), selectedLabelColor = Ink))
+        }
+    }
+}
+
+@Composable
+private fun Home(state: AppState, busy: Boolean, onOpen: (String) -> Unit, onCreate: (Split) -> Unit) {
     val unfinished = state.workouts.firstOrNull { it.completedAt == null }
+    val suggested = WorkoutEngine.nextSplit(state)
+    var selected by rememberSaveable(suggested) { mutableStateOf(suggested.name) }
     val history = state.workouts.filter { it.completedAt != null }.sortedByDescending { it.completedAt }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        item { Column(Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
-            Text("A little stronger,\none day at a time.", fontSize = 34.sp, lineHeight = 39.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(12.dp))
-            Text("Your simple push · pull · legs routine.", color = Muted)
-        } }
         item { Card(Modifier.widthIn(max = 840.dp).fillMaxWidth(), shape = RoundedCornerShape(24.dp)) {
-            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(if (unfinished == null) "UP NEXT" else "YOUR UNFINISHED DAY", color = Muted, fontSize = 12.sp, letterSpacing = 1.sp)
-                Text((unfinished?.split ?: WorkoutEngine.nextSplit(state)).title() + " day", fontSize = 32.sp, fontWeight = FontWeight.Bold)
-                Text("${unfinished?.estimatedMinutes?.toString() ?: "30–40"} min · 4 exercises · Standard gym", color = Muted)
-                Text(if (unfinished?.startedAt != null) "Pick up right where you left off." else "A focused session, with room for the rest of your day.")
-                Button(onClick = if (unfinished == null) onCreate else ({ onOpen(unfinished.id) }), enabled = !busy,
+            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (unfinished == null) {
+                    Text("Suggested: ${suggested.title()}", color = Muted, fontSize = 14.sp)
+                    SplitSelector(Split.valueOf(selected), !busy) { selected = it.name }
+                    Text("30–40 min · 4 exercises", color = Muted)
+                } else {
+                    Text("${unfinished.split.title()} day", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    Text("${unfinished.estimatedMinutes} min · ${unfinished.exercises.size} exercises", color = Muted)
+                }
+                Button(onClick = { if (unfinished == null) onCreate(Split.valueOf(selected)) else onOpen(unfinished.id) }, enabled = !busy,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(16.dp)) {
-                    Text(if (unfinished == null) "Create next day" else "Continue ${unfinished.split.title()} day")
+                    Text(if (unfinished == null) "Create workout" else if (unfinished.startedAt == null) "Open workout" else "Resume")
                 }
             }
         } }
         item { Column(Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
-            Text("Your consistency", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("Activity", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(12.dp))
             HabitHeatmap(state)
         } }
-        item { Text("Training history", modifier = Modifier.widthIn(max = 840.dp).fillMaxWidth(),
+        item { Text("History", modifier = Modifier.widthIn(max = 840.dp).fillMaxWidth(),
             style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-        if (history.isEmpty()) item { Text("Your first completed day starts the story.\nFinish a session to see it here.",
+        if (history.isEmpty()) item { Text("No completed workouts.",
             modifier = Modifier.widthIn(max = 840.dp).fillMaxWidth(), color = Muted, lineHeight = 24.sp) }
         items(history, key = { it.id }) { workout ->
             Card(onClick = { onOpen(workout.id) }, modifier = Modifier.widthIn(max = 840.dp).fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
@@ -193,7 +205,7 @@ private fun HabitHeatmap(state: AppState) {
     val start = today.minusWeeks(11).with(java.time.DayOfWeek.MONDAY)
     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("${counts.filterKeys { !it.isBefore(start) && !it.isAfter(today) }.values.sum()} sessions in the last 12 weeks", color = Muted)
+            Text("${counts.filterKeys { !it.isBefore(start) && !it.isAfter(today) }.values.sum()} sessions · 12 weeks", color = Muted)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     listOf("M", "", "W", "", "F", "", "S").forEach { Text(it, fontSize = 10.sp, modifier = Modifier.size(17.dp)) }
@@ -207,13 +219,13 @@ private fun HabitHeatmap(state: AppState) {
                     }
                 } }
             }
-            Text("${start.format(DateTimeFormatter.ofPattern("MMM d"))} — Today   ·   Coral = completed day", fontSize = 12.sp, color = Muted)
+            Text("${start.format(DateTimeFormatter.ofPattern("MMM d"))} — Today", fontSize = 12.sp, color = Muted)
         }
     }
 }
 
 @Composable
-private fun WorkoutScreen(workout: Workout, busy: Boolean, onBack: () -> Unit, onStart: () -> Unit,
+private fun WorkoutScreen(workout: Workout, busy: Boolean, onBack: () -> Unit, onSplit: (Split) -> Unit, onStart: () -> Unit,
     onFinish: () -> Unit, onDiscard: () -> Unit, onDirty: (String, Boolean) -> Unit,
     onSet: (String, Int, Double, Int, Boolean, () -> Unit) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
@@ -225,26 +237,31 @@ private fun WorkoutScreen(workout: Workout, busy: Boolean, onBack: () -> Unit, o
             Spacer(Modifier.height(12.dp))
             if (workout.completedAt != null) {
                 Text("Completed ${date(workout.completedAt!!)}", color = Muted)
-                Text("You can edit your saved sets below.", color = Muted)
             } else if (workout.startedAt == null) {
-                Text("Warm up for 5 minutes. Choose a comfortable working weight; 0 lb is valid for unloaded sets.", color = Muted)
-                Spacer(Modifier.height(16.dp))
+                SplitSelector(workout.split, !busy, onSplit)
+                Spacer(Modifier.height(12.dp))
                 Button(onClick = onStart, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Start workout") }
             } else {
                 val sets = workout.exercises.flatMap { it.sets }
-                Text("${sets.count { it.completed }} of ${sets.size} sets completed · Save each set as you go", color = Muted)
+                Text("${sets.count { it.completed }} of ${sets.size} sets completed", color = Muted)
             }
         } }
         items(workout.exercises, key = { it.id }) { exercise ->
             Card(Modifier.widthIn(max = 840.dp).fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(exercise.name, fontWeight = FontWeight.Bold, fontSize = 22.sp)
-                    Text("3 sets · ${exercise.targetReps} target reps · ${exercise.restSeconds}s rest", color = Muted, fontSize = 13.sp)
-                    Text(exercise.note, color = Muted, fontSize = 13.sp)
-                    exercise.sets.forEachIndexed { index, set ->
+                    val perHand = exercise.note.contains("per hand", ignoreCase = true)
+                    Text("${exercise.sets.size} × ${exercise.targetReps} reps · ${exercise.restSeconds}s rest${if (perHand) " · lb per hand" else ""}", color = Muted, fontSize = 13.sp)
+                    val progression = exercise.note.removeSuffix(" Weight is per hand.")
+                        .removePrefix("Choose your starting weight.").removePrefix("Repeat your previous working weights.")
+                        .removePrefix("Targets met last time. ").trim()
+                    if (progression.isNotEmpty()) Text(progression, color = Muted, fontSize = 13.sp)
+                    if (workout.startedAt == null) {
+                        val weights = exercise.sets.map { it.weightLb }
+                        Text(if (weights.distinct().size == 1) "${weights.first()} lb" else weights.joinToString(" / ") + " lb", color = Muted)
+                    } else exercise.sets.forEachIndexed { index, set ->
                         key(workout.id, exercise.id, index) {
-                            if (workout.startedAt == null) Text("Set ${index + 1}     ${set.weightLb} lb × ${set.reps} reps", modifier = Modifier.padding(vertical = 8.dp))
-                            else SetEditor(set, index, busy, exercise.name, { dirty -> onDirty("${exercise.id}:$index", dirty) }) { weight, reps, completed, saved -> onSet(exercise.id, index, weight, reps, completed, saved) }
+                            SetEditor(set, index, busy, exercise.name, { dirty -> onDirty("${exercise.id}:$index", dirty) }) { weight, reps, completed, saved -> onSet(exercise.id, index, weight, reps, completed, saved) }
                         }
                     }
                 }
@@ -253,7 +270,6 @@ private fun WorkoutScreen(workout: Workout, busy: Boolean, onBack: () -> Unit, o
         if (workout.completedAt == null) item { Column(Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
             if (workout.startedAt != null) {
                 Button(onClick = onFinish, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Finish workout") }
-                Text("Partial sessions count. Finish after at least one completed set.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
             }
             TextButton(onClick = onDiscard, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("Discard unfinished workout") }
         } }
