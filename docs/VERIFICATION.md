@@ -1,5 +1,12 @@
 # PoC verification ledger
 
+## 2026-09-29 — mandatory pre-install backups
+
+`python3 -m unittest discover -s scripts/tests -v`: 22 host tests passed (9 implementation + 13 independent), using fake adb/Gradle only. Independent review found abbreviated Gradle tasks could bypass the initial wrapper; fixed with supported full-task allowlist and verified regressions. Failure cases include device/permission/inventory/disk/archive errors, conflicting absence checks, wrong Android user, unsafe archive paths, sidecars/raw corrupt bytes, saved-edit acknowledgment, explicit serial, phone-instrumentation rejection, and backup-before-install ordering. `bash -n scripts/gradle.sh` and diff checks passed.
+
+No live backup, phone install or restore was performed during this change. The current debug app stores data under credential-encrypted private files, covered by the archive; nondebug access failures block updates, and future external/device-protected storage would require backup coverage changes. Backups remain local outside Git. Automatic restoration is intentionally not implemented.
+
+
 ## Revision 0.2 — simplified screens and chosen workouts
 
 Behavior revision `0e509e4`; independent test additions `9426c1b`; final supplied-icon resource revision `1ff18d3`. VersionCode 2 / versionName 0.2.0.

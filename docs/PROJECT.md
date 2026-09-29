@@ -39,7 +39,7 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 
 ## Decisions and assumptions
 
-- Standing user instruction, 2026-09-29: before EVERY install/update, make and verify a fresh local backup to `~/Documents/TimsFit Backups`. No install after failed/unreadable backup; positively confirmed absent app requires a no-existing-install receipt. Keep prior backups, never uninstall/clear data as a workaround. Applies to all project chats and test-device installs. Host backup/install helper is being added; see AGENTS.md.
+- Standing user instruction, 2026-09-29: before EVERY install/update, make and verify a fresh local backup to `~/Documents/TimsFit Backups`. No install after failed/unreadable backup; positively confirmed absent app requires a no-existing-install receipt. Keep prior backups, never uninstall/clear data as a workaround. Applies to all project chats and test-device installs. Implemented `scripts/backup-install.py` for backup-only or backup-then-install; README documents commands. Gradle wrapper also backs up before supported install/test tasks, blocks abbreviations and phone instrumentation. 22 fake-device host tests passed, including 13 independently authored checks. No live backup/install was performed for this change; saved-edit acknowledgment is required and no automated restore exists. See AGENTS.md.
 
 - Only the Chief of Staff edits coordination records and integrates changes to `main`.
 - Modest concurrency; bounded real project chats, reused when relevant.

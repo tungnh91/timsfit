@@ -16,16 +16,16 @@ To install on an Android device with USB debugging enabled and this Mac authoriz
 
 ```sh
 ~/.local/share/timsfit/android-sdk/platform-tools/adb devices
-~/.local/share/timsfit/android-sdk/platform-tools/adb -s DEVICE_SERIAL install -r app/build/outputs/apk/debug/app-debug.apk
+python3 scripts/backup-install.py install --serial DEVICE_SERIAL --saved --apk app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Replace `DEVICE_SERIAL` with the phone's serial from `adb devices`; the running emulator has a separate serial. Alternatively, transfer the APK to the phone and open it to install.
+Replace `DEVICE_SERIAL` with the phone's serial from `adb devices`; the emulator has a separate serial. Save edits in the app first: `--saved` acknowledges this before the app is stopped for a consistent snapshot. Every install requires a fresh verified backup on this Mac. The helper saves timestamped archives under `~/Documents/TimsFit Backups`, verifies their contents and checksum, then installs in place. Backup errors stop installation. Keep older backups. Do not bypass this by uninstalling, clearing storage, raw adb installation, or manually installing an APK. A confirmed absent app gets a no-existing-install receipt instead of a data archive.
 
 To use the prepared local foldable emulator:
 
 ```sh
 ./scripts/emulator.sh
-~/.local/share/timsfit/android-sdk/platform-tools/adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
+python3 scripts/backup-install.py install --serial emulator-5554 --saved --apk app/build/outputs/apk/debug/app-debug.apk
 ~/.local/share/timsfit/android-sdk/platform-tools/adb -s emulator-5554 shell am start -n com.timsfit.app/.MainActivity
 ```
 
@@ -45,11 +45,19 @@ The first setup installed the toolchain under `~/.local/share/timsfit`, without 
 
 ```sh
 ./scripts/gradle.sh :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
-ANDROID_SERIAL=emulator-5554 ./scripts/gradle.sh :app:connectedDebugAndroidTest
+ANDROID_SERIAL=emulator-5554 TIMSFIT_EDITS_SAVED=1 ./scripts/gradle.sh :app:connectedDebugAndroidTest
 ```
 
-Instrumentation checks run on a dedicated test emulator, explicitly selected above so a connected phone is excluded. Consult the current test setup before running them against a device containing workouts you want to keep.
+Instrumentation checks run on a dedicated test emulator, explicitly selected above so a connected phone is excluded. The wrapper also takes a verified backup before invoking Gradle; phone instrumentation is blocked. `TIMSFIT_EDITS_SAVED=1` acknowledges that test-device edits are saved before stopping the app. Consult the current test setup before running them against a device containing workouts you want to keep.
 
 `core` contains deterministic generation and state transitions. `app` contains Compose UI, state management, and versioned atomic local persistence. There is no backend or runtime network requirement.
 
 Product scope and chat ownership: [docs/PROJECT.md](docs/PROJECT.md). Shared contract: [docs/CONTRACT.md](docs/CONTRACT.md). Actual verification results and remaining gaps: [docs/VERIFICATION.md](docs/VERIFICATION.md).
+
+## Back up without installing
+
+```sh
+python3 scripts/backup-install.py backup --serial DEVICE_SERIAL --saved
+```
+
+Backups contain private saved data, including atomic-write sidecars, and stay outside Git. They cover saved entries, not unsaved text in the UI. Do not delete the backup directory during repository cleanup. The current debug app supports this via `run-as`; if a future release cannot be read, installation must stop until another verified backup method is available. Restoring data is a separate deliberate operation: retain the archive/manifest and validate version compatibility before replacing any phone data.
