@@ -2,6 +2,12 @@
 
 Updated: 2026-09-25. Owner: Chief of Staff chat `01a0da95-718e-79a1-b33b-2464dd079252`.
 
+## Next requested iteration — logging, timer and demos (2026-09-29)
+
+User requested a new implementation chat for: prefilled actual exercise history values; integer formatting without trailing `.0`; automatic saving; valid edited sets count as completed without a checkbox; elapsed session timer from Start; verified external exercise demonstration links. Maintain minimal copy, PPL overrides, existing history, and mandatory verified Mac backup before any install. Implementation is dispatched to a new isolated worktree at baseline `e2c9fae`; Chief of Staff retains integration and independent QA. No new feature is yet verified or released. Selected interpretation: actual previous values prefill directly (30 → 30); untouched suggestions are not completed; valid edits persist automatically and complete that set.
+
+Implementation chat `01a0ef98-895c-7521-a398-1ef7fca317be`, “Improve workout logging, timer, and exercise demos”, active in `/Users/timnguyen/.codex/worktrees/00cd/TimsFit` on `codex/autosave-history-timer`. Emulator slot allocated with mandatory verified backup before installs/tests.
+
 ## Current revision — 0.2
 
 User feedback: simplify text; remove motivational copy; allow Push/Pull/Legs selection overriding recommendation. Scope/API/acceptance are in `docs/CONTRACT.md` revision0.2. Implemented and integrated: concise copy, manual split choice, safe draft switching, and supplied biceps icon. 29 tests and independent emulator QA pass; original0.1→0.2 upgrade retained saved JSON byte-for-byte. Main owns records. Installation chat verified final0.2 installed and launched on authorized Samsung phone (versionCode2/versionName0.2.0). No physical workout acceptance test was run.
