@@ -26,11 +26,9 @@ class WorkoutFlowTest {
         compose.onNodeWithText("Create workout").performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Start workout").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Start workout").performClick()
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Save set").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Weight (lb)").fetchSemanticsNodes().isNotEmpty() }
         compose.onAllNodesWithText("Weight (lb)")[0].performTextReplacement("25")
         compose.onAllNodesWithText("Reps")[0].performTextReplacement("10")
-        compose.onAllNodes(isToggleable())[0].performClick()
-        compose.onAllNodesWithText("Save set")[0].performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Saved ✓").fetchSemanticsNodes().isNotEmpty() }
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Finish workout"))
         compose.onNodeWithText("Finish workout").performClick()
@@ -39,6 +37,6 @@ class WorkoutFlowTest {
         compose.onNodeWithText("1/12 sets completed").assertIsDisplayed()
         compose.onNodeWithText("View / edit").performClick()
         compose.onNodeWithText("Completed ", substring = true).assertIsDisplayed()
-        compose.onAllNodesWithText("25.0")[0].assertExists()
+        compose.onAllNodesWithText("25")[0].assertExists()
     }
 }

@@ -24,7 +24,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.viewModels
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.net.Uri
+import android.content.ActivityNotFoundException
+import kotlinx.coroutines.delay
 import com.timsfit.core.*
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -38,6 +43,11 @@ private fun date(timestamp: Long) = Instant.ofEpochMilli(timestamp).atZone(ZoneI
     .format(DateTimeFormatter.ofPattern("EEE, MMM d · h:mm a"))
 
 class MainActivity : ComponentActivity() {
+    private val model: FitViewModel by viewModels()
+    override fun onStop() {
+        model.flush()
+        super.onStop()
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -55,7 +65,7 @@ class MainActivity : ComponentActivity() {
                 onSurfaceVariant = Muted,
                 outline = Color(0xFF85847C),
                 outlineVariant = Color(0xFFDCD9D1))) {
-                TimsFit(viewModel())
+                TimsFit(model)
             }
         }
     }
@@ -69,7 +79,7 @@ fun TimsFit(model: FitViewModel) {
     var dirtySets by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var pendingNavigation by rememberSaveable { mutableStateOf<String?>(null) }
     val workout = ui.state.workouts.find { it.id == selectedId }
-    val goHome: () -> Unit = { if (dirtySets.isNotEmpty()) pendingNavigation = "home" else selectedId = null }
+    val goHome: () -> Unit = { if (dirtySets.isNotEmpty()) pendingNavigation = "home" else model.change({ it }) { selectedId = null } }
     BackHandler(enabled = workout != null) { goHome() }
     Surface(color = Canvas, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.safeDrawingPadding().fillMaxSize()) {
@@ -84,7 +94,7 @@ fun TimsFit(model: FitViewModel) {
                     Column(Modifier.padding(16.dp)) {
                         Text(message, color = Ink)
                         if (!ui.loaded) TextButton(onClick = model::reload, enabled = !ui.busy) { Text("Retry loading") }
-                        else TextButton(onClick = model::dismissError) { Text("Dismiss") }
+                        else TextButton(onClick = model::retry) { Text("Retry saving") }
                     }
                 }
             }
@@ -100,7 +110,7 @@ fun TimsFit(model: FitViewModel) {
                     }
                 })
             } else {
-                WorkoutScreen(workout, ui.busy, onBack = goHome,
+                WorkoutScreen(workout, ui.busy, ui.error != null, onBack = goHome,
                     onSplit = { split -> model.change({ WorkoutEngine.changeWorkoutSplit(it, workout.id, split) }) },
                     onStart = { model.change({ WorkoutEngine.startWorkout(it, workout.id, System.currentTimeMillis()) }) },
                     onFinish = {
@@ -109,15 +119,15 @@ fun TimsFit(model: FitViewModel) {
                     },
                     onDirty = { key, dirty -> dirtySets = if (dirty) (dirtySets + key).distinct() else dirtySets - key },
                     onDiscard = { discard = true },
-                    onSet = { exercise, index, weight, reps, complete, saved ->
-                        model.change({ WorkoutEngine.updateSet(it, workout.id, exercise, index, weight, reps, complete) }) { saved() }
+                    onSet = { exercise, index, weight, reps, saved ->
+                        model.change({ WorkoutEngine.updateSet(it, workout.id, exercise, index, weight, reps, true) }) { saved() }
                     })
             }
         }
     }
     if (pendingNavigation != null) AlertDialog(onDismissRequest = { pendingNavigation = null },
         title = { Text("Unsaved set changes") },
-        text = { Text("Use Save set for each edited set to keep your changes. Continuing will use only the sets already saved.") },
+        text = { Text("Some values are incomplete or invalid. Continuing keeps the last valid saved values.") },
         confirmButton = { TextButton(onClick = {
             val action = pendingNavigation
             pendingNavigation = null
@@ -125,7 +135,7 @@ fun TimsFit(model: FitViewModel) {
                 model.change({ WorkoutEngine.finishWorkout(it, workout.id, System.currentTimeMillis()) }) {
                     dirtySets = emptyList(); selectedId = null
                 }
-            } else { dirtySets = emptyList(); selectedId = null }
+            } else { model.change({ it }) { dirtySets = emptyList(); selectedId = null } }
         }) { Text("Continue without changes") } },
         dismissButton = { TextButton(onClick = { pendingNavigation = null }) { Text("Keep editing") } })
     if (discard && workout != null) AlertDialog(onDismissRequest = { discard = false },
@@ -187,6 +197,7 @@ private fun Home(state: AppState, busy: Boolean, onOpen: (String) -> Unit, onCre
                     Column(Modifier.weight(1f)) {
                         Text("${workout.split.title()} day", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                         Text(date(workout.completedAt!!), color = Muted, fontSize = 13.sp)
+                        Text("Duration ${durationText(elapsedSeconds(workout, 0))}", color = Muted, fontSize = 13.sp)
                         val sets = workout.exercises.flatMap { it.sets }
                         Text("${sets.count { it.completed }}/${sets.size} sets completed", color = Muted, fontSize = 13.sp)
                     }
@@ -225,16 +236,18 @@ private fun HabitHeatmap(state: AppState) {
 }
 
 @Composable
-private fun WorkoutScreen(workout: Workout, busy: Boolean, onBack: () -> Unit, onSplit: (Split) -> Unit, onStart: () -> Unit,
+private fun WorkoutScreen(workout: Workout, busy: Boolean, saveFailed: Boolean, onBack: () -> Unit, onSplit: (Split) -> Unit, onStart: () -> Unit,
     onFinish: () -> Unit, onDiscard: () -> Unit, onDirty: (String, Boolean) -> Unit,
-    onSet: (String, Int, Double, Int, Boolean, () -> Unit) -> Unit) {
+    onSet: (String, Int, Double, Int, () -> Unit) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         item { Column(Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
             TextButton(onClick = onBack) { Text("‹  Home") }
             Text("${workout.split.title()} day", fontSize = 36.sp, fontWeight = FontWeight.Bold)
             Text("${workout.estimatedMinutes} min · ${workout.exercises.size} exercises · Weights in lb", color = Muted)
+            Text("Demos open browser · Internet required", color = Muted, fontSize = 12.sp)
             Spacer(Modifier.height(12.dp))
+            if (workout.startedAt != null) SessionTimer(workout)
             if (workout.completedAt != null) {
                 Text("Completed ${date(workout.completedAt!!)}", color = Muted)
             } else if (workout.startedAt == null) {
@@ -249,19 +262,18 @@ private fun WorkoutScreen(workout: Workout, busy: Boolean, onBack: () -> Unit, o
         items(workout.exercises, key = { it.id }) { exercise ->
             Card(Modifier.widthIn(max = 840.dp).fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(exercise.name, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(exercise.name, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.weight(1f))
+                        DemoLink(exercise)
+                    }
                     val perHand = exercise.note.contains("per hand", ignoreCase = true)
                     Text("${exercise.sets.size} × ${exercise.targetReps} reps · ${exercise.restSeconds}s rest${if (perHand) " · lb per hand" else ""}", color = Muted, fontSize = 13.sp)
-                    val progression = exercise.note.removeSuffix(" Weight is per hand.")
-                        .removePrefix("Choose your starting weight.").removePrefix("Repeat your previous working weights.")
-                        .removePrefix("Targets met last time. ").trim()
-                    if (progression.isNotEmpty()) Text(progression, color = Muted, fontSize = 13.sp)
                     if (workout.startedAt == null) {
                         val weights = exercise.sets.map { it.weightLb }
-                        Text(if (weights.distinct().size == 1) "${weights.first()} lb" else weights.joinToString(" / ") + " lb", color = Muted)
+                        Text(if (weights.distinct().size == 1) "${weightText(weights.first())} lb" else weights.joinToString(" / ") { weightText(it) } + " lb", color = Muted)
                     } else exercise.sets.forEachIndexed { index, set ->
                         key(workout.id, exercise.id, index) {
-                            SetEditor(set, index, busy, exercise.name, { dirty -> onDirty("${exercise.id}:$index", dirty) }) { weight, reps, completed, saved -> onSet(exercise.id, index, weight, reps, completed, saved) }
+                            SetEditor(set, index, saveFailed, exercise.name, { dirty -> onDirty("${exercise.id}:$index", dirty) }) { weight, reps, saved -> onSet(exercise.id, index, weight, reps, saved) }
                         }
                     }
                 }
@@ -269,7 +281,7 @@ private fun WorkoutScreen(workout: Workout, busy: Boolean, onBack: () -> Unit, o
         }
         if (workout.completedAt == null) item { Column(Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
             if (workout.startedAt != null) {
-                Button(onClick = onFinish, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Finish workout") }
+                Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Finish workout") }
             }
             TextButton(onClick = onDiscard, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("Discard unfinished workout") }
         } }
@@ -278,34 +290,61 @@ private fun WorkoutScreen(workout: Workout, busy: Boolean, onBack: () -> Unit, o
 }
 
 @Composable
-private fun SetEditor(set: SetEntry, index: Int, busy: Boolean, exerciseName: String, onDirty: (Boolean) -> Unit,
-    onSave: (Double, Int, Boolean, () -> Unit) -> Unit) {
-    var weight by rememberSaveable(set.weightLb) { mutableStateOf(set.weightLb.toString()) }
-    var reps by rememberSaveable(set.reps) { mutableStateOf(set.reps.toString()) }
-    var complete by rememberSaveable(set.completed) { mutableStateOf(set.completed) }
+private fun SetEditor(set: SetEntry, index: Int, saveFailed: Boolean, exerciseName: String, onDirty: (Boolean) -> Unit,
+    onSave: (Double, Int, () -> Unit) -> Unit) {
+    // Never key drafts to saved numbers: an older IO acknowledgment must not move the cursor
+    // or replace newer text, including a trailing decimal point.
+    var weight by rememberSaveable { mutableStateOf(weightText(set.weightLb)) }
+    var reps by rememberSaveable { mutableStateOf(set.reps.toString()) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
-    var saved by rememberSaveable { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Text("Set ${index + 1}", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedTextField(weight, { weight = it; saved = false; onDirty(true) }, label = { Text("Weight (lb)") },
-                modifier = Modifier.weight(1f).semantics { contentDescription = "$exerciseName set ${index + 1} weight in lb" },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, enabled = !busy)
-            OutlinedTextField(reps, { reps = it; saved = false; onDirty(true) }, label = { Text("Reps") },
-                modifier = Modifier.weight(1f).semantics { contentDescription = "$exerciseName set ${index + 1} reps" },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, enabled = !busy)
+    fun edit(w: String, r: String) {
+        if (w == weight && r == reps) return
+        weight = w; reps = r
+        val entry = editedSet(w, r)
+        error = if (entry == null) "Enter 0–1500 lb and 1–100 reps." else null
+        onDirty(entry == null)
+        if (entry != null) {
+            onSave(entry.weightLb, entry.reps) {}
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = complete, onCheckedChange = { complete = it; saved = false; onDirty(true) }, enabled = !busy,
-                modifier = Modifier.semantics { contentDescription = "$exerciseName set ${index + 1} completed" })
-            Text("Completed", modifier = Modifier.weight(1f), fontSize = 13.sp)
-            TextButton(enabled = !busy, onClick = {
-                val w = weight.toDoubleOrNull(); val r = reps.toIntOrNull()
-                if (w == null || !w.isFinite() || w !in 0.0..1500.0 || r == null || r !in 1..100) {
-                    error = "Enter 0–1500 lb and 1–100 reps."
-                } else { error = null; onSave(w, r, complete) { saved = true; onDirty(false) } }
-            }) { Text(if (saved) "Saved ✓" else "Save set") }
+    }
+    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Set ${index + 1}", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            Text(if (error != null) "Not saved" else if (editedSet(weight, reps) == set) "Saved ✓" else if (saveFailed) "Not saved" else if (editedSet(weight, reps)?.let { it.weightLb != set.weightLb || it.reps != set.reps } == true) "Saving…" else "", color = Muted, fontSize = 12.sp)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedTextField(weight, { edit(it, reps) }, label = { Text("Weight (lb)") },
+                modifier = Modifier.weight(1f).semantics { contentDescription = "$exerciseName set ${index + 1} weight in lb" },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, isError = error != null)
+            OutlinedTextField(reps, { edit(weight, it) }, label = { Text("Reps") },
+                modifier = Modifier.weight(1f).semantics { contentDescription = "$exerciseName set ${index + 1} reps" },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, isError = error != null)
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
     }
+}
+
+@Composable
+private fun SessionTimer(workout: Workout) {
+    var now by remember(workout.id) { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(workout.id, workout.completedAt) {
+        while (workout.completedAt == null) { now = System.currentTimeMillis(); delay(1000) }
+    }
+    Text("${if (workout.completedAt == null) "Elapsed" else "Duration"} ${durationText(elapsedSeconds(workout, now))}", color = Muted)
+}
+
+@Composable
+private fun DemoLink(exercise: ExercisePlan) {
+    val url = exerciseDemoUrl(exercise.id) ?: return
+    val context = LocalContext.current
+    var error by remember { mutableStateOf(false) }
+    TextButton(onClick = {
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE))
+        } catch (_: ActivityNotFoundException) { error = true }
+        catch (_: SecurityException) { error = true }
+    }, modifier = Modifier.semantics { contentDescription = "Demo for ${exercise.name}. Opens browser; internet required." }) { Text("Demo ↗") }
+    if (error) AlertDialog(onDismissRequest = { error = false }, title = { Text("Could not open browser") },
+        text = { Text("Install or enable a browser to view the demo. Internet is required.") },
+        confirmButton = { TextButton(onClick = { error = false }) { Text("OK") } })
 }

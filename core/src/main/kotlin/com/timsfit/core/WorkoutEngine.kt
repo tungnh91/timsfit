@@ -6,25 +6,25 @@ import java.time.ZoneId
 
 /** Pure state transitions. Callers persist the returned snapshot before reporting success. */
 object WorkoutEngine {
-    private data class Exercise(val id: String, val name: String, val reps: Int, val rest: Int, val increment: Double)
+    private data class Exercise(val id: String, val name: String, val reps: Int, val rest: Int)
     private val plans = mapOf(
         Split.PUSH to listOf(
-            Exercise("bench-press", "Barbell bench press", 8, 120, 5.0),
-            Exercise("incline-dumbbell-press", "Incline dumbbell press", 10, 90, 5.0),
-            Exercise("lateral-raise", "Dumbbell lateral raise", 12, 75, 2.5),
-            Exercise("triceps-pushdown", "Cable triceps pushdown", 12, 90, 5.0)
+            Exercise("bench-press", "Barbell bench press", 8, 120),
+            Exercise("incline-dumbbell-press", "Incline dumbbell press", 10, 90),
+            Exercise("lateral-raise", "Dumbbell lateral raise", 12, 75),
+            Exercise("triceps-pushdown", "Cable triceps pushdown", 12, 90)
         ),
         Split.PULL to listOf(
-            Exercise("lat-pulldown", "Lat pulldown", 10, 120, 5.0),
-            Exercise("cable-row", "Seated cable row", 10, 120, 5.0),
-            Exercise("reverse-fly", "Dumbbell reverse fly", 12, 75, 2.5),
-            Exercise("dumbbell-curl", "Dumbbell curl", 12, 75, 2.5)
+            Exercise("lat-pulldown", "Lat pulldown", 10, 120),
+            Exercise("cable-row", "Seated cable row", 10, 120),
+            Exercise("reverse-fly", "Dumbbell reverse fly", 12, 75),
+            Exercise("dumbbell-curl", "Dumbbell curl", 12, 75)
         ),
         Split.LEGS to listOf(
-            Exercise("squat", "Barbell squat", 8, 120, 5.0),
-            Exercise("romanian-deadlift", "Dumbbell Romanian deadlift", 10, 120, 5.0),
-            Exercise("leg-curl", "Machine leg curl", 12, 90, 5.0),
-            Exercise("calf-raise", "Machine calf raise", 12, 90, 5.0)
+            Exercise("squat", "Barbell squat", 8, 120),
+            Exercise("romanian-deadlift", "Dumbbell Romanian deadlift", 10, 120),
+            Exercise("leg-curl", "Machine leg curl", 12, 90),
+            Exercise("calf-raise", "Machine calf raise", 12, 90)
         )
     )
 
@@ -48,28 +48,17 @@ object WorkoutEngine {
     }
 
     private fun generateWorkout(state: AppState, now: Long, id: String, split: Split): Workout {
-        val history = latest(state, split)
+        val history = state.workouts.filter { it.completedAt != null }
+            .sortedWith(compareByDescending<Workout> { it.completedAt }.thenByDescending { it.id })
         val exercises = plans.getValue(split).map { spec ->
-            val prior = history?.exercises?.find { it.id == spec.id }
-            val completed = prior?.sets.orEmpty().filter { it.completed }
-            val fallback = completed.minOfOrNull { it.weightLb } ?: 0.0
-            val increase = prior?.sets?.let { sets -> sets.size == 3 && sets.all { it.completed && it.reps >= spec.reps } } == true
             val sets = List(3) { index ->
-                val previous = prior?.sets?.getOrNull(index)
-                val weight = if (previous?.completed == true) previous.weightLb else fallback
-                val suggested = if (increase && weight > 0.0) (weight + spec.increment).coerceAtMost(1500.0) else weight
-                SetEntry(suggested, spec.reps, false)
+                val previous = history.asSequence().mapNotNull { workout ->
+                    workout.exercises.find { it.id == spec.id }?.sets?.getOrNull(index)?.takeIf { it.completed }
+                }.firstOrNull()
+                previous?.copy(completed = false) ?: SetEntry(0.0, spec.reps, false)
             }
-            val note = when {
-                completed.isEmpty() -> "Choose your starting weight."
-                increase && completed.any { it.weightLb > 0.0 && it.weightLb < 1500.0 } -> {
-                    val increment = if (spec.increment % 1.0 == 0.0) spec.increment.toInt().toString() else spec.increment.toString()
-                    "Targets met last time. Suggested +$increment lb."
-                }
-                else -> "Repeat your previous working weights."
-            } + if (completed.isNotEmpty() && prior?.sets?.any { !it.completed } == true) {
-                " Unfinished sets use your lightest completed load."
-            } else ""
+            val note = if (history.any { w -> w.exercises.any { e -> e.id == spec.id && e.sets.any { it.completed } } })
+                "Previous recorded values." else "Choose your starting weight."
             val loadNote = if (spec.name.contains("dumbbell", ignoreCase = true)) " Weight is per hand." else ""
             ExercisePlan(spec.id, spec.name, spec.reps, spec.rest, sets, note + loadNote)
         }

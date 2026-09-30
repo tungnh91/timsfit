@@ -32,7 +32,7 @@ class WorkoutEngineTest {
 
     @Test fun plansHaveTwelveUncompletedSetsZeroLoadAndRealisticTime() {
         for (split in Split.entries) {
-            val prior = finished().workouts.single().copy(split = when(split) { Split.PUSH -> Split.LEGS; Split.PULL -> Split.PUSH; Split.LEGS -> Split.PULL })
+            val prior = finished().workouts.single().copy(exercises = emptyList(), split = when(split) { Split.PUSH -> Split.LEGS; Split.PULL -> Split.PUSH; Split.LEGS -> Split.PULL })
             val workout = WorkoutEngine.createWorkout(AppState(listOf(prior)), 400, "next").workouts.last()
             assertEquals(split, workout.split)
             assertEquals(4, workout.exercises.size)
@@ -98,21 +98,21 @@ class WorkoutEngineTest {
         invalid { WorkoutEngine.createWorkout(finished(), 400, "w") }
     }
 
-    @Test fun progressionIsPerExerciseAndRequiresAllTargetSets() {
+    @Test fun prefillIsPerExerciseAndRequiresRecordedSets() {
         val workout = finished().workouts.single()
         val history = workout.copy(exercises = workout.exercises.mapIndexed { i, e ->
             e.copy(sets = List(3) { n -> SetEntry(50.0 + n * 5, if (i == 1) e.targetReps - 1 else e.targetReps, i != 2 || n != 2) })
         })
-        val recentPull = workout.copy(id = "pull", split = Split.PULL, completedAt = 400)
-        val recentLegs = workout.copy(id = "legs", split = Split.LEGS, completedAt = 500)
+        val recentPull = workout.copy(id = "pull", split = Split.PULL, exercises = emptyList(), completedAt = 400)
+        val recentLegs = workout.copy(id = "legs", split = Split.LEGS, exercises = emptyList(), completedAt = 500)
         val state = AppState(listOf(history, recentPull, recentLegs))
         val generated = WorkoutEngine.createWorkout(state, 600, "new").workouts.last()
         assertEquals(Split.PUSH, generated.split)
         generated.exercises.forEachIndexed { i, e ->
             e.sets.forEachIndexed { n, set ->
-                if (i == 0 || i == 3) assertEquals(history.exercises[i].sets[n].weightLb + 5.0, set.weightLb, 0.0)
-                else assertEquals(if (i == 2 && n == 2) 50.0 else history.exercises[i].sets[n].weightLb, set.weightLb, 0.0)
-                assertEquals(e.targetReps, set.reps)
+                if (i == 0 || i == 3) assertEquals(history.exercises[i].sets[n].weightLb, set.weightLb, 0.0)
+                else assertEquals(if (i == 2 && n == 2) 0.0 else history.exercises[i].sets[n].weightLb, set.weightLb, 0.0)
+                assertEquals(if (i == 1) e.targetReps - 1 else e.targetReps, set.reps)
                 assertFalse(set.completed)
             }
             assertTrue(e.note.isNotBlank())
@@ -125,7 +125,7 @@ class WorkoutEngineTest {
     @Test fun latestSameSplitSeedsAndProgressionNeverExceedsWeightLimit() {
         val base = finished().workouts.single()
         val latest = base.copy(id = "latest", completedAt = 600, exercises = base.exercises.map { e -> e.copy(sets = List(3) { SetEntry(1500.0, e.targetReps, true) }) })
-        val legs = base.copy(id = "legs", split = Split.LEGS, completedAt = 700)
+        val legs = base.copy(id = "legs", split = Split.LEGS, exercises = emptyList(), completedAt = 700)
         val next = WorkoutEngine.createWorkout(AppState(listOf(latest, legs, base)), 800, "new").workouts.last()
         next.exercises.flatMap { it.sets }.forEach { assertEquals(1500.0, it.weightLb, 0.0) }
     }
@@ -133,7 +133,7 @@ class WorkoutEngineTest {
     @Test fun zeroLoadNeverProgresses() {
         val base = finished().workouts.single()
         val zero = base.copy(exercises = base.exercises.map { e -> e.copy(sets = List(3) { SetEntry(0.0, e.targetReps, true) }) })
-        val legs = base.copy(id = "legs", split = Split.LEGS, completedAt = 700)
+        val legs = base.copy(id = "legs", split = Split.LEGS, exercises = emptyList(), completedAt = 700)
         val next = WorkoutEngine.createWorkout(AppState(listOf(zero, legs)), 800, "new").workouts.last()
         next.exercises.flatMap { it.sets }.forEach { assertEquals(0.0, it.weightLb, 0.0) }
 

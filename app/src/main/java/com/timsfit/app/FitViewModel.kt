@@ -5,11 +5,9 @@ import android.util.AtomicFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.timsfit.core.AppState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 internal class AtomicStateFile(file: File) : StateFile {
@@ -42,37 +40,21 @@ data class FitUiState(val state: AppState = AppState(), val loaded: Boolean = fa
     val busy: Boolean = false, val error: String? = null)
 
 class FitViewModel(application: Application) : AndroidViewModel(application) {
-    private val store = StateStore(AtomicStateFile(File(application.filesDir, "training-log-v1.json")))
     private val mutableUi = MutableStateFlow(FitUiState())
     val ui: StateFlow<FitUiState> = mutableUi
+    private val writer = StateWriter(StateStore(AtomicStateFile(File(application.filesDir, "training-log-v1.json")))) {
+        mutableUi.value = it
+    }
     init { reload() }
-    fun reload() {
-        if (mutableUi.value.busy) return
-        mutableUi.value = mutableUi.value.copy(busy = true, error = null)
-        viewModelScope.launch {
-            try {
-                val state = withContext(Dispatchers.IO) { store.load() }
-                mutableUi.value = FitUiState(state = state, loaded = true)
-            } catch (e: Exception) {
-                mutableUi.value = mutableUi.value.copy(busy = false, error = e.message ?: "Could not read saved log.")
-            }
-        }
-    }
-    fun dismissError() { mutableUi.value = mutableUi.value.copy(error = null) }
-    /** Busy is set synchronously on Main, serializing every action through durable IO. */
+    fun reload() { writer.load() }
+    fun retry() { writer.retry() }
     fun change(transform: (AppState) -> AppState, onSaved: (AppState) -> Unit = {}) {
-        val before = mutableUi.value
-        if (before.busy || !before.loaded) return
-        mutableUi.value = before.copy(busy = true, error = null)
-        viewModelScope.launch {
-            try {
-                val next = transform(before.state)
-                withContext(Dispatchers.IO) { store.save(next) }
-                mutableUi.value = FitUiState(next, loaded = true)
-                onSaved(next)
-            } catch (e: Exception) {
-                mutableUi.value = before.copy(busy = false, error = "Not saved. ${e.message ?: "Please try again."}")
-            }
+        writer.change(transform).thenAccept { state -> viewModelScope.launch { onSaved(state) } }
+    }
+    fun flush() {
+        try { writer.flush() } catch (_: java.util.concurrent.TimeoutException) {
+            // Keep Saving visible; the IO worker continues. Never acknowledge an unfinished write.
         }
     }
+    override fun onCleared() { writer.close() }
 }

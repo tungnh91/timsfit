@@ -43,7 +43,7 @@ class WorkoutSelectionTest {
         ))
         val workout = WorkoutEngine.createWorkout(history, 40, "selected", Split.LEGS).workouts.last()
         assertEquals(Split.LEGS, workout.split)
-        workout.exercises.flatMap { it.sets }.forEach { assertEquals(65.0, it.weightLb, 0.0); assertFalse(it.completed) }
+        workout.exercises.flatMap { it.sets }.forEach { assertEquals(60.0, it.weightLb, 0.0); assertFalse(it.completed) }
         assertEquals(history.workouts, WorkoutEngine.createWorkout(history, 40, "selected", Split.LEGS).workouts.dropLast(1))
     }
 

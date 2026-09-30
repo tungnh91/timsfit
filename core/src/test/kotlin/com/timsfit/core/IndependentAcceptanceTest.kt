@@ -41,12 +41,12 @@ class IndependentAcceptanceTest {
         }
     }
 
-    @Test fun mixedZeroAndVariedLoadsProgressAndLaterHistoryEditStopsIncrease() {
+    @Test fun mixedZeroAndVariedLoadsRepeatAndLaterHistoryEditIsUsed() {
         var state = start(AppState(), "push", 100)
         listOf(0.0, 40.0, 55.0).forEachIndexed { index, weight -> state = log(state, "push", index, weight) }
         state = returnToPush(WorkoutEngine.finishWorkout(state, "push", 110))
         val next = WorkoutEngine.createWorkout(state, 400, "next")
-        assertEquals(listOf(0.0, 45.0, 60.0), next.workouts.last().exercises.first().sets.map { it.weightLb })
+        assertEquals(listOf(0.0, 40.0, 55.0), next.workouts.last().exercises.first().sets.map { it.weightLb })
         assertTrue(next.workouts.last().exercises.first().sets.none { it.completed })
         val edited = log(state, "push", 1, 35.0, reps = 7)
         val afterEdit = WorkoutEngine.createWorkout(edited, 400, "edited-next")
@@ -91,12 +91,12 @@ class IndependentAcceptanceTest {
         state = WorkoutEngine.createWorkout(state, 200, "draft", Split.PUSH)
         val originalHistory = state.workouts.first()
         state = WorkoutEngine.changeWorkoutSplit(state, "draft", Split.LEGS)
-        assertEquals(listOf(0.0, 45.0, 60.0), state.workouts.last().exercises.first().sets.map { it.weightLb })
+        assertEquals(listOf(0.0, 40.0, 55.0), state.workouts.last().exercises.first().sets.map { it.weightLb })
         repeat(3) {
             state = WorkoutEngine.changeWorkoutSplit(state, "draft", Split.PULL)
             state = WorkoutEngine.changeWorkoutSplit(state, "draft", Split.LEGS)
         }
-        assertEquals(listOf(0.0, 45.0, 60.0), state.workouts.last().exercises.first().sets.map { it.weightLb })
+        assertEquals(listOf(0.0, 40.0, 55.0), state.workouts.last().exercises.first().sets.map { it.weightLb })
         assertEquals(originalHistory, state.workouts.first())
         state = log(state, "legs-history", 1, 30.0, reps = 7)
         state = WorkoutEngine.changeWorkoutSplit(state, "draft", Split.PUSH)

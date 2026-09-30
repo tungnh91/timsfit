@@ -48,7 +48,7 @@ class WorkoutChoiceTest {
         compose.onNodeWithText("Push").performClick()
         awaitText("Push day")
         compose.onNodeWithText("Start workout").performClick()
-        awaitText("Save set")
+        awaitText("Weight (lb)")
         compose.onNodeWithText("Legs").assertDoesNotExist()
         compose.onNodeWithText("‹  Home").performClick()
         awaitText("Resume")
