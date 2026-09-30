@@ -1,5 +1,9 @@
 # PoC verification ledger
 
+## 2026-09-29 — authorized phone update to 0.3
+
+Selected RFGL71KQHAB explicitly; app process was absent before backup. Guarded helper verified archive and checksum before in-place install. Backup retained at `~/Documents/TimsFit Backups/RFGL71KQHAB-0d3a8bd1/20260930T002344.658937Z-1f55df9a`. CoS independently rechecked archive SHA256 and compared saved training-log-v1.json against phone after update: byte-identical. Previous version0.2.0; installed versionCode3/versionName0.3.0 verified. MainActivity cold launch reported Status: ok (382ms). No uninstall, clear, instrumentation or workout edits on phone; physical workout acceptance remains for user.
+
 ## Revision 0.3 — history prefills, autosave, timer and demos
 
 Independent report: [QA-REPORT-0.3.md](QA-REPORT-0.3.md). Production revision `6c3b693`; independent tests `6ba01f8`. VersionCode3/versionName0.3.0, schema1 and package/signing identity unchanged. Implemented and integrated on main; local debug APK packaged, no phone install or store release.
