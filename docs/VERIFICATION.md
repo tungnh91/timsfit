@@ -1,5 +1,16 @@
 # PoC verification ledger
 
+## Revision 0.3 — history prefills, autosave, timer and demos
+
+Independent report: [QA-REPORT-0.3.md](QA-REPORT-0.3.md). Production revision `6c3b693`; independent tests `6ba01f8`. VersionCode3/versionName0.3.0, schema1 and package/signing identity unchanged. Implemented and integrated on main; local debug APK packaged, no phone install or store release.
+
+- Actual red–green evidence: new history tests failed before implementation; numeric/timer/writer tests failed before implementation; old Save controls failed the new UI expectation. Logs in `artifacts/qa-v03/`.
+- Integrated checks: 22 core + 13 app unit + 6 emulator instrumentation = **41 tests**, zero failures/errors/skips; CoS independently read XML. Lint zero errors/10 warnings; build passed. Independent tests cover invalid draft/recreation/Finish, IO exceeding lifecycle wait, and rejected transforms preserving subsequent operations.
+- Runtime checks: automatic 30 lb save survives restart, timer resumes from original start and freezes at finish, next Push prefills actual30 without marking it completed. CoS inspected narrow/expanded screens. Browser launch and missing-browser error exercised; video playback not tested. Demonstration sources in `docs/EXERCISE-LINKS.md`.
+- Genuine upgrade on separate emulator-5556: 0.2 saved synthetic workout retained byte-for-byte through guarded in-place 0.3 installation. First-install receipt `20260930T001340.617838Z-90864a87`; pre-upgrade backup `20260930T001424.456140Z-527ec26c` under `~/Documents/TimsFit Backups/emulator-5556-58878876/`. Integrated instrumentation backup `20260930T001237.251063Z-56490b2d` under the emulator-5554 backup directory. No phone operations.
+- APK: `artifacts/TimsFit-0.3.0-debug.apk`, 11,686,459 bytes, SHA256 `a10d55196bb31f6fee7699229c2954250d31923516061fc365607ed0590f366e`.
+- Limits: no physical-device workout acceptance; no full accessibility/performance audit. Unsaved/failed writes are never acknowledged as Saved; abrupt termination before disk acknowledgment cannot guarantee the pending edit.
+
 ## 2026-09-29 — Android absent-package compatibility fix
 
 Worker stopped safely after emulator test cleanup because Android pm path returns empty exit1 for an absent package. Added failing regression, then narrowly accepted empty exit0/1 only after valid absent inventory and rechecked device connectivity plus complete inventory. Output/errors, other exit codes and contradictory inventory still block installs. Full25host tests passed; independent read-only review passed. No device actions performed by CoS for this fix.

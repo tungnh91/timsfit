@@ -1,6 +1,6 @@
 # TimsFit
 
-A small, offline Android app for Push / Pull / Legs training. Built with Kotlin and Jetpack Compose. Version 0.2 adds explicit workout choice and simpler screens.
+A small, offline Android app for Push / Pull / Legs training. Built with Kotlin and Jetpack Compose. Version 0.3 adds history prefills, automatic saving, a session timer, and exercise demo links.
 
 ## Try the PoC
 
@@ -19,7 +19,7 @@ To install on an Android device with USB debugging enabled and this Mac authoriz
 python3 scripts/backup-install.py install --serial DEVICE_SERIAL --saved --apk app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Replace `DEVICE_SERIAL` with the phone's serial from `adb devices`; the emulator has a separate serial. Save edits in the app first: `--saved` acknowledges this before the app is stopped for a consistent snapshot. Every install requires a fresh verified backup on this Mac. The helper saves timestamped archives under `~/Documents/TimsFit Backups`, verifies their contents and checksum, then installs in place. Backup errors stop installation. Keep older backups. Do not bypass this by uninstalling, clearing storage, raw adb installation, or manually installing an APK. A confirmed absent app gets a no-existing-install receipt instead of a data archive.
+Replace `DEVICE_SERIAL` with the phone's serial from `adb devices`; the emulator has a separate serial. Wait for edits to show **Saved** in the app first: `--saved` acknowledges this before the app is stopped for a consistent snapshot. Every install requires a fresh verified backup on this Mac. The helper saves timestamped archives under `~/Documents/TimsFit Backups`, verifies their contents and checksum, then installs in place. Backup errors stop installation. Keep older backups. Do not bypass this by uninstalling, clearing storage, raw adb installation, or manually installing an APK. A confirmed absent app gets a no-existing-install receipt instead of a data archive.
 
 To use the prepared local foldable emulator:
 
@@ -33,9 +33,10 @@ python3 scripts/backup-install.py install --serial emulator-5554 --saved --apk a
 
 1. Choose **Push**, **Pull**, or **Legs**, then tap **Create workout**. The suggested choice follows completed sessions, but you can override it. An unfinished day opens or resumes instead of creating a duplicate.
 2. Review the four-exercise plan, optionally change its split before starting, and tap **Start workout**. Estimated duration is 31–32 minutes including warmup, set execution, rests, and transitions; actual duration depends on your pace.
-3. Enter your working weight in **lb** and reps, mark completion, and tap **Save set**. Dumbbell weights are per hand. First-time loads start at zero so you can choose them.
+3. Edit weight in **lb** or reps. Valid edits save automatically and count that set as completed; untouched prefills do not. Wait for **Saved** before stopping the app. Invalid text stays editable without replacing saved values. Dumbbell weights are per hand; first-time loads start at zero.
 4. Finish after at least one completed set. Partial sessions are labeled with the actual completed set count. Reopen history to edit saved sets.
-5. The next same-split session uses previous completed loads. Meeting all three set targets suggests a small increase in positive loads; incomplete sets and zero loads do not earn an increase. You can edit every suggestion.
+5. New workouts prefill the last completed weight and reps for each exercise/set, without increasing the load. You can edit every suggestion.
+6. The timer starts with **Start workout**, continues across backgrounding/restarts, and freezes when finished. Tap **Demo** to open the exercise demonstration in your browser (internet required).
 
 Completed sessions fill the habit heatmap using the device's local date. All data stays in this app's private storage and survives restarts. Clearing app data or uninstalling removes that local history; cloud sync and export are outside this PoC.
 

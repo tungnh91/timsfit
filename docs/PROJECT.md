@@ -1,18 +1,18 @@
 # TimsFit delivery record
 
-Updated: 2026-09-25. Owner: Chief of Staff chat `01a0da95-718e-79a1-b33b-2464dd079252`.
+Updated: 2026-09-29. Owner: Chief of Staff chat `01a0da95-718e-79a1-b33b-2464dd079252`.
 
-## Next requested iteration — logging, timer and demos (2026-09-29)
+## Current revision — 0.3 logging, timer and demos (2026-09-29)
 
-User requested a new implementation chat for: prefilled actual exercise history values; integer formatting without trailing `.0`; automatic saving; valid edited sets count as completed without a checkbox; elapsed session timer from Start; verified external exercise demonstration links. Maintain minimal copy, PPL overrides, existing history, and mandatory verified Mac backup before any install. Implementation is dispatched to a new isolated worktree at baseline `e2c9fae`; Chief of Staff retains integration and independent QA. No new feature is yet verified or released. Selected interpretation: actual previous values prefill directly (30 → 30); untouched suggestions are not completed; valid edits persist automatically and complete that set.
+User requested a new implementation chat for: prefilled actual exercise history values; integer formatting without trailing `.0`; automatic saving; valid edited sets count as completed without a checkbox; elapsed session timer from Start; verified external exercise demonstration links. Maintain minimal copy, PPL overrides, existing history, and mandatory verified Mac backup before any install. Implementation is dispatched to a new isolated worktree at baseline `e2c9fae`; Chief of Staff retains integration and independent QA. Implemented and integrated as `6c3b693`; independent tests `6ba01f8`. Integrated checks pass: 22 core + 13 app unit + 6 instrumentation = 41 tests, lint and APK build. Emulator 0.2→0.3 upgrade preserved saved JSON byte-for-byte. Independent source review and emulator acceptance found no blocking defect; the detailed report is linked in the verification ledger. No 0.3 phone install or store release. Selected interpretation: actual previous values prefill directly (30 → 30); untouched suggestions are not completed; valid edits persist automatically and complete that set.
 
-Implementation chat `01a0ef98-895c-7521-a398-1ef7fca317be`, “Improve workout logging, timer, and exercise demos”, active in `/Users/timnguyen/.codex/worktrees/00cd/TimsFit` on `codex/autosave-history-timer`. Emulator slot allocated with mandatory verified backup before installs/tests.
+Implementation chat `01a0ef98-895c-7521-a398-1ef7fca317be`, “Improve workout logging, timer, and exercise demos”, active in `/Users/timnguyen/.codex/worktrees/00cd/TimsFit` on `codex/autosave-history-timer`. Implementation complete; emulator handed to independent QA with mandatory verified backup before installs/tests.
 
-## Current revision — 0.2
+## Previous revision — 0.2
 
 User feedback: simplify text; remove motivational copy; allow Push/Pull/Legs selection overriding recommendation. Scope/API/acceptance are in `docs/CONTRACT.md` revision0.2. Implemented and integrated: concise copy, manual split choice, safe draft switching, and supplied biceps icon. 29 tests and independent emulator QA pass; original0.1→0.2 upgrade retained saved JSON byte-for-byte. Main owns records. Installation chat verified final0.2 installed and launched on authorized Samsung phone (versionCode2/versionName0.2.0). No physical workout acceptance test was run.
 
-## Current state
+## Original project state
 
 Discovery found an empty project directory, no existing code, instructions, tests, or Git history. Initialized Git on `main`; this is the integration branch. The first native PPL app is now implemented and integrated on main. All 21 automated tests, lint, build, and independent emulator acceptance checks pass. No release has been published.
 
@@ -45,7 +45,7 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 
 ## Decisions and assumptions
 
-- Standing user instruction, 2026-09-29: before EVERY install/update, make and verify a fresh local backup to `~/Documents/TimsFit Backups`. No install after failed/unreadable backup; positively confirmed absent app requires a no-existing-install receipt. Keep prior backups, never uninstall/clear data as a workaround. Applies to all project chats and test-device installs. Implemented `scripts/backup-install.py` for backup-only or backup-then-install; README documents commands. Gradle wrapper also backs up before supported install/test tasks, blocks abbreviations and phone instrumentation. 22 fake-device host tests passed, including 13 independently authored checks. No live backup/install was performed for this change; saved-edit acknowledgment is required and no automated restore exists. See AGENTS.md.
+- Standing user instruction, 2026-09-29: before EVERY install/update, make and verify a fresh local backup to `~/Documents/TimsFit Backups`. No install after failed/unreadable backup; positively confirmed absent app requires a no-existing-install receipt. Keep prior backups, never uninstall/clear data as a workaround. Applies to all project chats and test-device installs. Implemented `scripts/backup-install.py` for backup-only or backup-then-install; README documents commands. Gradle wrapper also backs up before supported install/test tasks, blocks abbreviations and phone instrumentation. 25 fake-device host tests passed, including 13 independently authored checks. No live backup/install was performed for this change; saved-edit acknowledgment is required and no automated restore exists. See AGENTS.md.
 
 - Only the Chief of Staff edits coordination records and integrates changes to `main`.
 - Modest concurrency; bounded real project chats, reused when relevant.
@@ -68,7 +68,7 @@ User confirmed Kotlin + Jetpack Compose, generated Push/Pull/Legs workouts based
 ## Verification and unresolved issues
 
 - Inspected directory and relevant chats: complete.
-- Prior PoC verified with 21 automated tests and direct emulator interaction; revision0.2 verification pending.
+- Prior PoC verified with 21 automated tests and direct emulator interaction; revision0.2 and revision0.3 verification complete (see ledger).
 - Native toolchain installed user-locally under `~/.local/share/timsfit`. `scripts/gradle.sh` selects JDK/SDK. Bootstrap packaging passes (NO-SOURCE is not a behavioral test pass).
 - API 36 ARM64 foldable emulator booted as `emulator-5554`; no physical Galaxy connected. Bootstrap specialist verified boot complete and folded/open states available. Product interaction completed; see `docs/VERIFICATION.md` and `docs/QA-REPORT.md`.
-- User workflow decision resolved. PPL PoC is agreed; implemented, independently verified, integrated and packaged. Latest APK `artifacts/TimsFit-0.2.0-debug.apk`; local PoC, not store released.
+- User workflow decision resolved. PPL PoC is agreed; implemented, independently verified, integrated and packaged. Latest APK `artifacts/TimsFit-0.3.0-debug.apk`; local PoC, not store released.

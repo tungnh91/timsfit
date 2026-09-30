@@ -1,12 +1,23 @@
 # PoC implementation contract
 
+## Revision 0.3 — history, autosave, timer and demos
+
+The user's latest requirements supersede earlier explicit-save and automatic load-increase behavior. VersionCode3/versionName0.3.0 retains schema1 and the existing application identity.
+
+- Prefill each exercise/set from its most recent completed set in completed workout history, by stable exercise ID and set index. Copy actual weight/reps; do not increase loads. Missing history uses zero/target defaults. Prefills remain uncompleted.
+- Display whole weights without `.0`, retaining fractional values. Valid changed input saves automatically and marks that set completed; no Save button or Completed checkbox. Focus or an untouched prefill does not complete a set.
+- Serialize edits and finish/navigation actions through ordered atomic disk writes off the main thread. Keep text drafts responsive. Invalid/partial text must not overwrite saved values; show recoverable errors. A write is Saved only after successful persistence. Retain failed writes for retry.
+- Session elapsed time derives from persisted startedAt and completedAt: it starts at Start, survives recreation/background/restart and freezes at Finish. Local device clock is the time source.
+- Each exercise has a verified exercise-specific demonstration link, opened in an external browser. Handle absence of a browser visibly. Provenance lives in `docs/EXERCISE-LINKS.md`; no embedded media or network dependency for logging.
+- Independently verify autosave failure/order, invalid drafts, rapid edits, restart/timer behavior, layout, demo handling and a genuine 0.2→0.3 upgrade. Make a verified Mac backup before every install/test installation.
+
 ## Revision 0.2 — less copy, explicit workout choice
 
 User requested removal of motivational/redundant text and ability to override the recommended workout. Keep Kotlin/Compose, persistence, logging and heatmap behavior.
 
 - Home begins with the workout card: compact `Suggested: Push` label, accessible Push / Pull / Legs selector and `Create workout` action. Default selection is the recommendation, but user can select any split. Selection survives recreation. No slogans, motivational heading, explanatory hero or standard-gym boilerplate.
 - Draft detail permits the same split selection before Start; switching regenerates that draft from the selected split's own history, retaining workout ID/createdAt. Re-selecting the same split is a no-op. Active or completed workouts cannot be silently replaced or switched. Active home shows Resume; user can finish/discard using existing guarded flows.
-- Override does not change rotation until completed. Completing a chosen Legs session means next suggested Push. Same-split load progression and all existing protections remain.
+- Override does not change rotation until completed. Completing a chosen Legs session means next suggested Push. History-based prefills and all existing protections remain.
 - API: `createWorkout(state: AppState, now: Long, id: String, selectedSplit: Split? = null): AppState`; existing calls remain valid. Add `changeWorkoutSplit(state: AppState, workoutId: String, split: Split): AppState` for unstarted drafts only; invalid IDs or started/completed sessions throw IllegalArgumentException. No JSON schema/model changes.
 - Remove motivational and redundant screen text, repeated default exercise notes, repeated preview set rows, verbose save/finish guidance. Keep functional labels, weight units (per-hand where relevant), actionable errors, unsaved/discard confirmations, reps/rest information, completion counts and heatmap accessibility. Brief progression information may remain only when useful.
 - Acceptance: red–green core and UI tests for explicit selection (all three splits), draft switch, same-split history, rotation after override, active protection and restart persistence. Existing regression suite remains green with intentional text assertions updated. Independent reviewer verifies absence of slogans and full selected-workout flow on narrow and wide emulator, preserving saved data. New versionCode2/versionName0.2.0 debug APK must support install -r without data deletion.
@@ -41,14 +52,14 @@ Core functions throw IllegalArgumentException with helpful messages for invalid 
 
 - One unfinished workout at a time. Create returns the existing state if a draft/active workout exists (UI opens it). Next split follows most recent completed session: Push → Pull → Legs → Push, initially Push. Discard does not advance rotation.
 - Generate 4 exercises × 3 sets for each split using free weights and common machines, bounded 30–40 minute estimate that includes warmup/rest. No remote AI.
-- Same split's most recent completed workout seeds per-exercise weight/reps. If all three completed sets meet target reps, add the exercise's conservative predefined weight increment; otherwise retain prior weight. Explain changes with `note`. First workout starts at 0 lb (user enters a working weight); never present invented personal weights. Zero is valid for unloaded/bodyweight; reps 1–100 and finite weight 0–1500 are valid. Generated sets default uncompleted and reps at target.
+- Generation follows the revision0.3 history-prefill rules above. Zero is valid for unloaded/bodyweight; reps 1–100 and finite weight 0–1500 are valid.
 - Start records startedAt once. Set editing is allowed in started and completed sessions; edited history influences future generation. Finish requires started session and at least one completed set; finish is idempotent (keeps original completion time). Partial sessions are permitted and displayed honestly. No duplicate completions/heatmap counts.
-- Zero initial weight must not auto-progress solely from meeting reps; retain zero until positive load history is entered. With varied historical weights, preserve each prior per-set load and explain progression rather than copying a peak across all sets. Duration estimates should derive from warmup, execution, rest and transitions.
+- Duration estimates derive from warmup, execution, rest and transitions.
 - History uses completion timestamp in current local timezone; habit heatmap shows completed sessions only. Discard only unfinished workouts. Dates come from actual device clock with injected tests.
 
 ## App ownership and persistence
 
-UI specialist owns `app/src/main/java/com/timsfit/app/**` including MainActivity, state holder, JSON file persistence and testable storage seam. Use atomic writes, versioned JSON, local private storage, IO off main thread, save before declaring success, and visible recoverable error without overwriting corrupt data. Keep per-keystroke input drafts in UI and persist on explicit set action. Persist draft creation, start, edits, completion and discard. Reload process state; display local empty/error states. No permission/network/backend dependency. Core specialist owns `core/src/**` only. Bootstrap specialist owns build configuration, manifest/resources/wrapper only. Independent reviewer owns test additions after integration (coordinate overlapping paths).
+UI specialist owns `app/src/main/java/com/timsfit/app/**` including MainActivity, state holder, JSON file persistence and testable storage seam. Use atomic writes, versioned JSON, local private storage, IO off main thread, save before declaring success, and visible recoverable error without overwriting corrupt data. Keep per-keystroke input drafts in UI and automatically persist valid changed values through the ordered writer. Persist draft creation, start, edits, completion and discard. Reload process state; display local empty/error states. No permission/network/backend dependency. Core specialist owns `core/src/**` only. Bootstrap specialist owns build configuration, manifest/resources/wrapper only. Independent reviewer owns test additions after integration (coordinate overlapping paths).
 
 ## Interface
 
