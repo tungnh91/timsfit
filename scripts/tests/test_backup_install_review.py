@@ -1,5 +1,6 @@
 """Independent host-only regressions. Never invoke the real adb or Gradle."""
 import io
+import json
 import os
 from pathlib import Path
 import shutil
@@ -32,6 +33,26 @@ class IndependentBackupReview(unittest.TestCase):
     def test_zero_exit_error_on_absence_probe_blocks_install(self):
         p = self.fixture.adb
         p.write_text(p.read_text().replace("elif a[:3] == ['shell','pm','path']: pass", "elif a[:3] == ['shell','pm','path']: print('Error: permission denied')"))
+        self.blocked('absent')
+
+    def test_absence_exit_one_empty_creates_receipt(self):
+        p = self.fixture.adb
+        p.write_text(p.read_text().replace("elif a[:3] == ['shell','pm','path']: pass", "elif a[:3] == ['shell','pm','path']: sys.exit(1)"))
+        result, calls = self.fixture.run_helper('absent')
+        self.assertEqual(0, result.returncode, result.stderr)
+        receipt = json.loads(next(self.fixture.backups.rglob('manifest.json')).read_text())
+        self.assertEqual('no-existing-install', receipt['status'])
+        self.assertTrue(receipt['verified'])
+        self.assertEqual('install', calls[-1][2])
+
+    def test_absence_probe_exit_one_with_error_blocks(self):
+        p = self.fixture.adb
+        p.write_text(p.read_text().replace("elif a[:3] == ['shell','pm','path']: pass", "elif a[:3] == ['shell','pm','path']: print('permission denied', file=sys.stderr); sys.exit(1)"))
+        self.blocked('absent')
+
+    def test_absence_probe_other_exit_blocks(self):
+        p = self.fixture.adb
+        p.write_text(p.read_text().replace("elif a[:3] == ['shell','pm','path']: pass", "elif a[:3] == ['shell','pm','path']: sys.exit(2)"))
         self.blocked('absent')
 
     def test_wrong_android_user_blocks_install(self):

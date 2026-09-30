@@ -1,5 +1,9 @@
 # PoC verification ledger
 
+## 2026-09-29 — Android absent-package compatibility fix
+
+Worker stopped safely after emulator test cleanup because Android pm path returns empty exit1 for an absent package. Added failing regression, then narrowly accepted empty exit0/1 only after valid absent inventory and rechecked device connectivity plus complete inventory. Output/errors, other exit codes and contradictory inventory still block installs. Full25host tests passed; independent read-only review passed. No device actions performed by CoS for this fix.
+
 ## 2026-09-29 — mandatory pre-install backups
 
 `python3 -m unittest discover -s scripts/tests -v`: 22 host tests passed (9 implementation + 13 independent), using fake adb/Gradle only. Independent review found abbreviated Gradle tasks could bypass the initial wrapper; fixed with supported full-task allowlist and verified regressions. Failure cases include device/permission/inventory/disk/archive errors, conflicting absence checks, wrong Android user, unsafe archive paths, sidecars/raw corrupt bytes, saved-edit acknowledgment, explicit serial, phone-instrumentation rejection, and backup-before-install ordering. `bash -n scripts/gradle.sh` and diff checks passed.

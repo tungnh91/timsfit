@@ -125,8 +125,21 @@ def main():
     if not lines or any(not re.fullmatch(r'package:[A-Za-z0-9_.]+', line) for line in lines):
         raise RuntimeError('Package inventory not positively verified.')
     installed = 'package:' + PACKAGE in lines
-    if not installed and run(adb + ['shell', 'pm', 'path', '--user', '0', PACKAGE]):
-        raise RuntimeError('Package absence confirmation disagrees with inventory.')
+    if not installed:
+        # Android pm path returns 1 with no output when this package is absent.
+        # Accept that ONLY here, after a successful, validated package inventory.
+        probe = subprocess.run(adb + ['shell', 'pm', 'path', '--user', '0', PACKAGE],
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=180)
+        if probe.returncode not in (0, 1) or probe.stdout.strip() or probe.stderr.strip():
+            raise RuntimeError('Package absence could not be confirmed; installation blocked.')
+        # Recheck connectivity and inventory rather than interpreting a silent
+        # transport error or a concurrently installed app as an empty device.
+        if run(adb + ['get-state']) != 'device':
+            raise RuntimeError('Device connection changed during absence check.')
+        confirmation = run(adb + ['shell', 'pm', 'list', 'packages', '--user', '0']).splitlines()
+        if (not confirmation or 'package:' + PACKAGE in confirmation or
+                any(not re.fullmatch(r'package:[A-Za-z0-9_.]+', line) for line in confirmation)):
+            raise RuntimeError('Package absence confirmation disagrees with inventory.')
     now = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     device_dir = re.sub(r'[^A-Za-z0-9_.-]', '_', args.serial)[:80] + '-' + hashlib.sha256(args.serial.encode()).hexdigest()[:8]
     folder = root / device_dir / (now + '-' + uuid.uuid4().hex[:8])
