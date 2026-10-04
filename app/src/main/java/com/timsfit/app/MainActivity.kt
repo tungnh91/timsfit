@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -328,6 +329,8 @@ private fun SetEditor(set: SetEntry, index: Int, saveFailed: Boolean, exerciseNa
     var weight by rememberSaveable { mutableStateOf(weightText(set.weightLb)) }
     var reps by rememberSaveable { mutableStateOf(set.reps.toString()) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var clearZeroOnFocus by remember { mutableStateOf(false) }
+    var weightFocused by remember { mutableStateOf(false) }
     var weightLocallyEdited by rememberSaveable { mutableStateOf(false) }
     var repsLocallyEdited by rememberSaveable { mutableStateOf(false) }
     // Refresh untouched prefills when an earlier set changes. Never replace an
@@ -358,8 +361,15 @@ private fun SetEditor(set: SetEntry, index: Int, saveFailed: Boolean, exerciseNa
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val stacked = maxWidth < 260.dp || LocalDensity.current.fontScale > 1.3f
             val weightInput: @Composable (Modifier) -> Unit = { fieldModifier ->
-                OutlinedTextField(weight, { edit(it, reps) }, label = { Text("Weight (lb)") },
-                    modifier = fieldModifier.semantics { contentDescription = "$exerciseName set ${index + 1} weight in lb" },
+                // Clearing the displayed default is not a workout edit. If the user
+                // leaves without typing, show the saved zero again without logging a set.
+                OutlinedTextField(if (clearZeroOnFocus && weight == "0") "" else weight,
+                    { clearZeroOnFocus = false; edit(it, reps) }, label = { Text("Weight (lb)") },
+                    modifier = fieldModifier.onFocusChanged { focus ->
+                        if (focus.isFocused && !weightFocused) clearZeroOnFocus = weight == "0"
+                        if (!focus.isFocused) clearZeroOnFocus = false
+                        weightFocused = focus.isFocused
+                    }.semantics { contentDescription = "$exerciseName set ${index + 1} weight in lb" },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true,
                     isError = error != null, shape = RoundedCornerShape(12.dp))
             }
