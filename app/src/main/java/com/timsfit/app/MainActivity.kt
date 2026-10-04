@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -130,8 +131,8 @@ fun TimsFit(model: FitViewModel) {
                     },
                     onDirty = { key, dirty -> dirtySets = if (dirty) (dirtySets + key).distinct() else dirtySets - key },
                     onDiscard = { discard = true },
-                    onSet = { exercise, index, weight, reps, saved ->
-                        model.change({ WorkoutEngine.updateSet(it, workout.id, exercise, index, weight, reps, true) }) { saved() }
+                    onSet = { exercise, index, weight, reps, weightEdited, repsEdited, saved ->
+                        model.change({ WorkoutEngine.updateSet(it, workout.id, exercise, index, weight, reps, true, weightEdited, repsEdited) }) { saved() }
                     })
             }
         }
@@ -266,7 +267,7 @@ private fun HabitHeatmap(state: AppState) {
 @Composable
 private fun WorkoutScreen(workout: Workout, busy: Boolean, saveFailed: Boolean, onBack: () -> Unit, onSplit: (Split) -> Unit, onStart: () -> Unit,
     onFinish: () -> Unit, onDiscard: () -> Unit, onDirty: (String, Boolean) -> Unit,
-    onSet: (String, Int, Double, Int, () -> Unit) -> Unit) {
+    onSet: (String, Int, Double, Int, Boolean, Boolean, () -> Unit) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         item { Column(Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
@@ -304,7 +305,7 @@ private fun WorkoutScreen(workout: Workout, busy: Boolean, saveFailed: Boolean, 
                         Text(if (weights.distinct().size == 1) "${weightText(weights.first())} lb" else weights.joinToString(" / ") { weightText(it) } + " lb", color = Muted)
                     } else exercise.sets.forEachIndexed { index, set ->
                         key(workout.id, exercise.id, index) {
-                            SetEditor(set, index, saveFailed, exercise.name, { dirty -> onDirty("${exercise.id}:$index", dirty) }) { weight, reps, saved -> onSet(exercise.id, index, weight, reps, saved) }
+                            SetEditor(set, index, saveFailed, exercise.name, { dirty -> onDirty("${exercise.id}:$index", dirty) }) { weight, reps, weightEdited, repsEdited, saved -> onSet(exercise.id, index, weight, reps, weightEdited, repsEdited, saved) }
                         }
                     }
                 }
@@ -322,20 +323,34 @@ private fun WorkoutScreen(workout: Workout, busy: Boolean, saveFailed: Boolean, 
 
 @Composable
 private fun SetEditor(set: SetEntry, index: Int, saveFailed: Boolean, exerciseName: String, onDirty: (Boolean) -> Unit,
-    onSave: (Double, Int, () -> Unit) -> Unit) {
+    onSave: (Double, Int, Boolean, Boolean, () -> Unit) -> Unit) {
     // Never key drafts to saved numbers: an older IO acknowledgment must not move the cursor
     // or replace newer text, including a trailing decimal point.
     var weight by rememberSaveable { mutableStateOf(weightText(set.weightLb)) }
     var reps by rememberSaveable { mutableStateOf(set.reps.toString()) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var clearZeroOnFocus by remember { mutableStateOf(false) }
+    var weightFocused by remember { mutableStateOf(false) }
+    var weightLocallyEdited by rememberSaveable { mutableStateOf(false) }
+    var repsLocallyEdited by rememberSaveable { mutableStateOf(false) }
+    // Refresh untouched prefills when an earlier set changes. Never replace an
+    // in-progress draft or cursor with an asynchronous save acknowledgment.
+    LaunchedEffect(set.weightLb, set.reps) {
+        if (!weightLocallyEdited) weight = weightText(set.weightLb)
+        if (!repsLocallyEdited) reps = set.reps.toString()
+    }
     fun edit(w: String, r: String) {
         if (w == weight && r == reps) return
+        val weightChanged = w != weight
+        val repsChanged = r != reps
+        weightLocallyEdited = weightLocallyEdited || weightChanged
+        repsLocallyEdited = repsLocallyEdited || repsChanged
         weight = w; reps = r
         val entry = editedSet(w, r)
         error = if (entry == null) "Enter 0–1500 lb and 1–100 reps." else null
         onDirty(entry == null)
         if (entry != null) {
-            onSave(entry.weightLb, entry.reps) {}
+            onSave(entry.weightLb, entry.reps, weightLocallyEdited, repsLocallyEdited) {}
         }
     }
     Column(Modifier.fillMaxWidth().background(Canvas, RoundedCornerShape(16.dp)).padding(12.dp)) {
@@ -346,8 +361,15 @@ private fun SetEditor(set: SetEntry, index: Int, saveFailed: Boolean, exerciseNa
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val stacked = maxWidth < 260.dp || LocalDensity.current.fontScale > 1.3f
             val weightInput: @Composable (Modifier) -> Unit = { fieldModifier ->
-                OutlinedTextField(weight, { edit(it, reps) }, label = { Text("Weight (lb)") },
-                    modifier = fieldModifier.semantics { contentDescription = "$exerciseName set ${index + 1} weight in lb" },
+                // Clearing the displayed default is not a workout edit. If the user
+                // leaves without typing, show the saved zero again without logging a set.
+                OutlinedTextField(if (clearZeroOnFocus && weight == "0") "" else weight,
+                    { clearZeroOnFocus = false; edit(it, reps) }, label = { Text("Weight (lb)") },
+                    modifier = fieldModifier.onFocusChanged { focus ->
+                        if (focus.isFocused && !weightFocused) clearZeroOnFocus = weight == "0"
+                        if (!focus.isFocused) clearZeroOnFocus = false
+                        weightFocused = focus.isFocused
+                    }.semantics { contentDescription = "$exerciseName set ${index + 1} weight in lb" },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true,
                     isError = error != null, shape = RoundedCornerShape(12.dp))
             }
