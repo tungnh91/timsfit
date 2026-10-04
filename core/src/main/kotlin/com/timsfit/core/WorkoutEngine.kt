@@ -90,7 +90,7 @@ object WorkoutEngine {
         return replace(state, workout.copy(startedAt = now))
     }
 
-    fun updateSet(state: AppState, workoutId: String, exerciseId: String, setIndex: Int, weightLb: Double, reps: Int, completed: Boolean): AppState {
+    fun updateSet(state: AppState, workoutId: String, exerciseId: String, setIndex: Int, weightLb: Double, reps: Int, completed: Boolean, weightEdited: Boolean = true, repsEdited: Boolean = true): AppState {
         require(weightLb.isFinite() && weightLb in 0.0..1500.0) { "Weight must be a finite number from 0 to 1500 lb." }
         require(reps in 1..100) { "Reps must be from 1 to 100." }
         val workout = findWorkout(state, workoutId)
@@ -98,8 +98,18 @@ object WorkoutEngine {
         val exercise = workout.exercises.find { it.id == exerciseId }
             ?: throw IllegalArgumentException("Exercise not found: $exerciseId.")
         require(setIndex in exercise.sets.indices) { "Set index is out of range: $setIndex." }
+        val previous = exercise.sets[setIndex]
+        val newWeight = if (weightEdited) weightLb else previous.weightLb
+        val newReps = if (repsEdited) reps else previous.reps
         val updated = exercise.copy(sets = exercise.sets.mapIndexed { index, set ->
-            if (index == setIndex) SetEntry(weightLb, reps, completed) else set
+            when {
+                index == setIndex -> SetEntry(newWeight, newReps, completed)
+                index > setIndex && !set.completed && workout.completedAt == null -> set.copy(
+                    weightLb = if (weightEdited && newWeight != previous.weightLb) newWeight else set.weightLb,
+                    reps = if (repsEdited && newReps != previous.reps) newReps else set.reps
+                )
+                else -> set
+            }
         })
         return replace(state, workout.copy(exercises = workout.exercises.map { if (it.id == exerciseId) updated else it }))
     }
